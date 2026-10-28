@@ -86,6 +86,8 @@
   };
   function update() {
     if (picker) picker.value = selected;
+    const details = document.getElementById("currency-details");
+    if (details) details.hidden = selected === "UZS";
     const note = document.getElementById("currency-note");
     if (!note) return;
     const names = {

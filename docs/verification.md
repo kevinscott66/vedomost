@@ -108,4 +108,4 @@ Removed the redundant payment-recording disclaimer and API documentation link fr
 
 ## Inline exchange-rate display
 
-The rate control is a quiet text disclosure below the balance caption. Foreign display currencies show the quote and effective date; UZS shows the rate date. Stale/fallback warnings remain visible. Numeric dates avoid missing Uzbek month names in browser Intl data. Public browser checks covered Russian/Uzbek date rendering, USD conversion and the native disclosure. 29 JavaScript tests pass. Screenshot: [inline rate](inline-rate.png). No ledger data changed.
+The rate control is a quiet text disclosure below the balance caption. Foreign display currencies show the quote and effective date; UZS hides the rate control because no display conversion is needed. Stale/fallback warnings remain visible. Numeric dates avoid missing Uzbek month names in browser Intl data. Public browser checks covered Russian/Uzbek date rendering, USD conversion and the native disclosure. 29 JavaScript tests pass. Screenshot: [inline rate](inline-rate.png). No ledger data changed.
