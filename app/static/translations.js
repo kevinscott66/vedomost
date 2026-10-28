@@ -1,5 +1,20 @@
 window.VEDOMOST_TRANSLATIONS = {
   ru: {
+    gatewaysTitle: "Онлайн-оплата",
+    demoBadge: "ДЕМО",
+    gatewaysNote:
+      "Заглушки платёжных модулей. Не списывают деньги и не добавляют записи в ведомость.",
+    gatewayRub: "Карты / СБП",
+    gatewayUsd: "Банковские карты",
+    gatewayUzs: "Локальные карты",
+    gatewayOpen: "Открыть демо →",
+    gatewayTitle: "Демо-платёж · {code}",
+    gatewayDisclaimer:
+      "Платёжный сервис не подключён. Здесь нет ввода реквизитов, списания или подтверждения реальной оплаты.",
+    gatewayTest: "Проверить заглушку",
+    gatewayResult:
+      "Заглушка работает. Запрос не отправлен, платёж и запись в ведомости не созданы.",
+
     brand: "ведомость",
     appTitle: "Ведомость — оплаты учебного центра",
     home: "На главную",
@@ -128,6 +143,21 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Укажите положительный целый ID ученика.",
   },
   en: {
+    gatewaysTitle: "Online payments",
+    demoBadge: "DEMO",
+    gatewaysNote:
+      "Payment-module placeholders. No money is charged and no ledger entries are created.",
+    gatewayRub: "Cards / SBP",
+    gatewayUsd: "Bank cards",
+    gatewayUzs: "Local cards",
+    gatewayOpen: "Open demo →",
+    gatewayTitle: "Demo payment · {code}",
+    gatewayDisclaimer:
+      "No payment provider is connected. There are no credential fields, charges or confirmations of a real payment.",
+    gatewayTest: "Test placeholder",
+    gatewayResult:
+      "The placeholder works. No request was sent, no payment or ledger entry was created.",
+
     brand: "vedomost",
     appTitle: "Vedomost — learning centre payments",
     home: "Back to app",
@@ -257,6 +287,21 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Enter a positive integer student ID.",
   },
   uz: {
+    gatewaysTitle: "Onlayn to‘lov",
+    demoBadge: "DEMO",
+    gatewaysNote:
+      "To‘lov modullarining namunalari. Pul yechilmaydi va hisobga yozuv qo‘shilmaydi.",
+    gatewayRub: "Kartalar / SBP",
+    gatewayUsd: "Bank kartalari",
+    gatewayUzs: "Mahalliy kartalar",
+    gatewayOpen: "Demoni ochish →",
+    gatewayTitle: "Demo to‘lov · {code}",
+    gatewayDisclaimer:
+      "To‘lov xizmati ulanmagan. Rekvizit kiritish, pul yechish yoki haqiqiy to‘lovni tasdiqlash yo‘q.",
+    gatewayTest: "Namunani tekshirish",
+    gatewayResult:
+      "Namuna ishlaydi. So‘rov yuborilmadi, to‘lov va hisob yozuvi yaratilmadi.",
+
     brand: "vedomost",
     appTitle: "Vedomost — o‘quv markazi to‘lovlari",
     home: "Ilovaga qaytish",
