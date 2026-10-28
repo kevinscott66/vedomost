@@ -135,7 +135,7 @@ async function runtime() {
   for (const match of html.matchAll(/<([a-z]+)\b[^>]*\bid="([^"]+)"/g))
     ids.set(match[2], new Element(match[1]));
   for (const [form, controls] of [
-    ["payment-form", ["pay-student", "pay-amount", "pay-date", "save-payment"]],
+    ["payment-form", ["pay-student", "pay-amount", "pay-currency", "pay-date", "save-payment"]],
     [
       "student-form",
       [
@@ -244,12 +244,14 @@ test("Pay and student editor clear custom validation after programmatic populati
 test("pending payment protects its draft and row actions through display rerenders", async () => {
   const app = await runtime();
   await app.payButtons()[0].fire("click");
+  assert.equal(app.element("pay-currency").value, "UZS");
   const original = ["pay-student", "pay-amount", "pay-date"].map(
     (id) => app.element(id).value,
   );
   const submission = app.element("payment-form").fire("submit");
   const payment = app.requests.at(-1);
   assert.equal(payment.path, "/payments");
+  assert.equal(JSON.parse(payment.options.body).currency, "UZS");
   for (const event of ["languagechange", "currencychange"]) {
     await app.display(event);
     assert.equal(app.payButtons()[0].disabled, true, event);
@@ -262,6 +264,46 @@ test("pending payment protects its draft and row actions through display rerende
   await app.respond(payment, { detail: "retry" }, 503);
   await submission;
   assert.equal(app.payButtons()[0].disabled, false);
+});
+
+test("payment currency is posted independently from display currency", async () => {
+  const app = await runtime();
+  app.element("pay-student").value = "1";
+  app.element("pay-amount").value = "12.50";
+  app.element("pay-currency").value = "USD";
+  app.element("pay-date").value = "2026-10-28";
+  const submission = app.element("payment-form").fire("submit");
+  const payment = app.requests.at(-1);
+  assert.equal(JSON.parse(payment.options.body).amount, "12.50");
+  assert.equal(JSON.parse(payment.options.body).currency, "USD");
+  await app.respond(payment, { id: 1 });
+  for (const request of app.requests.slice(-2))
+    await app.respond(
+      request,
+      request.path === "/students" ? people : report(app.element("month").value),
+    );
+  await submission;
+});
+
+test("payment history keeps the original currency and shows frozen UZS equivalent", async () => {
+  const app = await runtime();
+  const opening = app.studentButtons()[0].fire("click");
+  const request = app.requests.at(-1);
+  await app.respond(
+    request,
+    [
+      {
+        amount: "12.50",
+        currency: "USD",
+        base_amount: "148000.00",
+        date: "2026-10-28",
+      },
+    ],
+  );
+  await opening;
+  assert.match(app.element("history-list").textContent, /12\.50\s+\$/);
+  assert.match(app.element("history-list").textContent, /baseEquivalent/);
+  assert.match(app.element("history-list").textContent, /148,000\.00.*currencyUnit/);
 });
 
 for (const outcome of ["success", "error"]) {

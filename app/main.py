@@ -4,9 +4,9 @@ import re
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Query, Response
 from fastapi import Path as PathParam
@@ -57,10 +57,15 @@ class PaymentInput(BaseModel):
     student_id: Annotated[int, Field(gt=0, le=MAX_ID)]
     amount: Money
     date: date
+    currency: Literal["UZS", "RUB", "USD"] = "UZS"
 
 
 class Payment(PaymentInput):
     id: int
+    base_amount: Decimal
+    exchange_rate: float
+    rate_date: date | None
+    rate_source: str | None
 
 
 class Debtor(Student):
@@ -114,7 +119,12 @@ def payment_dict(row: sqlite3.Row) -> dict:
     return {
         "id": row["id"],
         "student_id": row["student_id"],
-        "amount": money(row["amount_cents"]),
+        "amount": money(row["original_amount_cents"]),
+        "currency": row["currency"],
+        "base_amount": money(row["amount_cents"]),
+        "exchange_rate": float(row["exchange_rate"]),
+        "rate_date": row["rate_date"],
+        "rate_source": row["rate_source"],
         "date": row["paid_on"],
     }
 
@@ -259,26 +269,78 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         payment: PaymentInput,
         idempotency_key: Annotated[str | None, Header(min_length=16, max_length=128)] = None,
     ):
-        payload = f"{payment.student_id}|{minor_units(payment.amount)}|{payment.date.isoformat()}"
+        original_cents = minor_units(payment.amount)
+        payload = f"{payment.student_id}|{original_cents}|{payment.date.isoformat()}"
+        if payment.currency != "UZS":
+            payload += f"|{payment.currency}"
+
+        def replay(db):
+            prior = db.execute(
+                "SELECT payload, payment_id FROM payment_requests WHERE request_key = ?",
+                (idempotency_key,),
+            ).fetchone()
+            if prior:
+                if prior["payload"] != payload:
+                    raise HTTPException(409, "Idempotency key used for a different payment")
+                row = db.execute(
+                    "SELECT * FROM payments WHERE id = ?", (prior["payment_id"],)
+                ).fetchone()
+                return payment_dict(row)
+            return None
+
+        # A retry must return its booked snapshot even when today's rate source is down.
+        if idempotency_key:
+            with connect() as db:
+                prior_result = replay(db)
+            if prior_result is not None:
+                return prior_result
+        with connect() as db:
+            existing = require_student(db, payment.student_id)
+        if payment.date.isoformat()[:7] < existing["start_month"]:
+            raise HTTPException(422, "Дата оплаты раньше начала обучения")
+
+        exchange_rate = Decimal(1)
+        base_cents = original_cents
+        rate_date = None
+        rate_source = None
+        if payment.currency != "UZS":
+            snapshot = exchange_rates.get()
+            if snapshot.get("status") != "fresh" or snapshot.get("source") not in {"CBU", "CBR"}:
+                raise HTTPException(503, "Нет свежего официального курса для оплаты")
+            try:
+                exchange_rate = Decimal(str(snapshot["rates"][payment.currency]))
+                rate_date = date.fromisoformat(snapshot["rate_date"])
+                rate_source = snapshot["source"]
+                converted = (payment.amount * exchange_rate * 100).quantize(
+                    Decimal("1"), rounding=ROUND_HALF_UP
+                )
+                base_cents = int(converted)
+            except (KeyError, ValueError, ArithmeticError):
+                raise HTTPException(503, "Официальный курс недоступен") from None
+            if base_cents <= 0 or base_cents > MAX_ID:
+                raise HTTPException(422, "Сумма в UZS выходит за допустимый диапазон")
+
         with connect(write=True) as db:
             if idempotency_key:
-                prior = db.execute(
-                    "SELECT payload, payment_id FROM payment_requests WHERE request_key = ?",
-                    (idempotency_key,),
-                ).fetchone()
-                if prior:
-                    if prior["payload"] != payload:
-                        raise HTTPException(409, "Idempotency key used for a different payment")
-                    row = db.execute(
-                        "SELECT * FROM payments WHERE id = ?", (prior["payment_id"],)
-                    ).fetchone()
-                    return payment_dict(row)
+                prior_result = replay(db)
+                if prior_result is not None:
+                    return prior_result
             existing = require_student(db, payment.student_id)
             if payment.date.isoformat()[:7] < existing["start_month"]:
                 raise HTTPException(422, "Дата оплаты раньше начала обучения")
             cursor = db.execute(
-                "INSERT INTO payments(student_id, amount_cents, paid_on) VALUES(?, ?, ?)",
-                (payment.student_id, minor_units(payment.amount), payment.date.isoformat()),
+                "INSERT INTO payments(student_id, amount_cents, paid_on, original_amount_cents, "
+                "currency, exchange_rate, rate_date, rate_source) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    payment.student_id,
+                    base_cents,
+                    payment.date.isoformat(),
+                    original_cents,
+                    payment.currency,
+                    str(exchange_rate),
+                    rate_date.isoformat() if rate_date else None,
+                    rate_source,
+                ),
             )
             if idempotency_key:
                 db.execute(

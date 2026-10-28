@@ -78,6 +78,107 @@ def test_month_boundaries_and_decimal_precision(client):
     assert report(client, "2026-12")["debtors"] == []
 
 
+def test_foreign_payment_books_rounded_uzs_and_original_currency(client, monkeypatch):
+    s = student(client, "200.00", start_month="2026-10")
+    snapshot = {
+        "status": "fresh",
+        "source": "CBU",
+        "rate_date": "2026-10-27",
+        "rates": {"UZS": 1, "RUB": 150.125, "USD": 12000},
+    }
+    monkeypatch.setattr("app.main.ExchangeRateService.get", lambda _self: snapshot)
+    response = client.post(
+        "/payments",
+        json={"student_id": s["id"], "amount": "1.01", "date": "2026-10-28", "currency": "RUB"},
+    )
+    assert response.status_code == 201, response.text
+    payment = response.json()
+    assert payment["amount"] == "1.01"
+    assert payment["currency"] == "RUB"
+    assert payment["base_amount"] == "151.63"  # 151.62625 rounds half up to cents
+    assert payment["exchange_rate"] == 150.125
+    assert payment["rate_date"] == "2026-10-27"
+    assert payment["rate_source"] == "CBU"
+    assert report(client)["total_debt"] == "48.37"
+    history = client.get(f"/students/{s['id']}/payments").json()
+    assert history == [payment]
+
+
+def test_foreign_payment_replay_precedes_rate_refresh_and_rate_changes(client, monkeypatch):
+    s = student(client, "0", start_month="2026-10")
+    snapshots = iter(
+        [
+            {
+                "status": "fresh",
+                "source": "CBR",
+                "rate_date": "2026-10-27",
+                "rates": {"UZS": 1, "RUB": 150, "USD": 12000},
+            },
+            {
+                "status": "fresh",
+                "source": "CBR",
+                "rate_date": "2026-10-28",
+                "rates": {"UZS": 1, "RUB": 200, "USD": 13000},
+            },
+        ]
+    )
+    monkeypatch.setattr("app.main.ExchangeRateService.get", lambda _self: next(snapshots))
+    payload = {"student_id": s["id"], "amount": "2.00", "date": "2026-10-28", "currency": "RUB"}
+    headers = {"Idempotency-Key": "foreign-payment-key-12345"}
+    first = client.post("/payments", json=payload, headers=headers)
+    assert first.status_code == 201, first.text
+    replay = client.post("/payments", json=payload, headers=headers)
+    assert replay.status_code == 201
+    assert replay.json() == first.json()
+    assert client.get("/debtors?month=2026-10").json()["total_debt"] == "0.00"
+    assert (
+        client.post("/payments", json={**payload, "currency": "USD"}, headers=headers).status_code
+        == 409
+    )
+
+
+def test_foreign_payment_rejects_stale_rate(client, monkeypatch):
+    s = student(client)
+    monkeypatch.setattr(
+        "app.main.ExchangeRateService.get",
+        lambda _self: {
+            "status": "stale",
+            "source": "CBU",
+            "rate_date": "2026-10-27",
+            "rates": {"UZS": 1, "RUB": 150, "USD": 12000},
+        },
+    )
+    response = client.post(
+        "/payments",
+        json={"student_id": s["id"], "amount": "5", "currency": "USD", "date": "2026-10-28"},
+    )
+    assert response.status_code == 503
+    assert client.get(f"/students/{s['id']}/payments").json() == []
+
+
+@pytest.mark.parametrize(
+    ("amount", "rate", "expected_status"),
+    [("0.01", "0.001", 422), ("9999999999.99", "1000000000", 422)],
+)
+def test_foreign_payment_rejects_unbookable_uzs_amount(
+    client, monkeypatch, amount, rate, expected_status
+):
+    s = student(client)
+    snapshot = {
+        "status": "fresh",
+        "source": "CBU",
+        "rate_date": "2026-10-27",
+        "rates": {"UZS": 1, "RUB": float(rate), "USD": 12000},
+    }
+    monkeypatch.setattr("app.main.ExchangeRateService.get", lambda _self: snapshot)
+    response = client.post(
+        "/payments",
+        json={"student_id": s["id"], "amount": amount, "currency": "RUB", "date": "2026-10-28"},
+    )
+    assert response.status_code == expected_status
+    assert client.get(f"/students/{s['id']}/payments").json() == []
+
+
 @pytest.mark.parametrize("amount", ["0", "-1", "0.001", "NaN", "Infinity", "10000000000"])
 def test_invalid_amount(client, amount):
     s = student(client)

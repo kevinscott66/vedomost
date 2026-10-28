@@ -39,7 +39,7 @@ class Database:
     def initialize(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
-            if db.execute("PRAGMA user_version").fetchone()[0] > 2:
+            if db.execute("PRAGMA user_version").fetchone()[0] > 3:
                 raise RuntimeError("Database schema is newer than this application")
             db.execute("PRAGMA journal_mode = WAL")
             db.executescript("""
@@ -55,7 +55,12 @@ class Database:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE RESTRICT,
                     amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
-                    paid_on TEXT NOT NULL
+                    paid_on TEXT NOT NULL,
+                    original_amount_cents INTEGER NOT NULL DEFAULT 0,
+                    currency TEXT NOT NULL DEFAULT 'UZS',
+                    exchange_rate TEXT NOT NULL DEFAULT '1',
+                    rate_date TEXT,
+                    rate_source TEXT
                 );
                 CREATE INDEX IF NOT EXISTS payments_student_date
                     ON payments(student_id, paid_on);
@@ -80,4 +85,21 @@ class Database:
                     "(SELECT MIN(substr(paid_on,1,7)) FROM payments WHERE student_id=students.id),"
                     "start_month))"
                 )
-            db.execute("PRAGMA user_version = 2")
+            payment_columns = {row["name"] for row in db.execute("PRAGMA table_info(payments)")}
+            if "original_amount_cents" not in payment_columns:
+                db.execute(
+                    "ALTER TABLE payments ADD COLUMN original_amount_cents "
+                    "INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execute("UPDATE payments SET original_amount_cents = amount_cents")
+            if "currency" not in payment_columns:
+                db.execute("ALTER TABLE payments ADD COLUMN currency TEXT NOT NULL DEFAULT 'UZS'")
+            if "exchange_rate" not in payment_columns:
+                db.execute(
+                    "ALTER TABLE payments ADD COLUMN exchange_rate TEXT NOT NULL DEFAULT '1'"
+                )
+            if "rate_date" not in payment_columns:
+                db.execute("ALTER TABLE payments ADD COLUMN rate_date TEXT")
+            if "rate_source" not in payment_columns:
+                db.execute("ALTER TABLE payments ADD COLUMN rate_source TEXT")
+            db.execute("PRAGMA user_version = 3")

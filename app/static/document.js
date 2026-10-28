@@ -83,7 +83,8 @@
         path === "/payments"
           ? {
               student_id: 1,
-              amount: "200000.00",
+              amount: "2000.00",
+              currency: "RUB",
               date: localDay,
             }
           : {
@@ -179,7 +180,12 @@
           monthly_fee: "800000.00",
           start_month: "2026-10",
         },
-        { student_id: 1, amount: "200000.00", date: "2026-10-28" },
+        {
+          student_id: 1,
+          amount: "2000.00",
+          currency: "RUB",
+          date: "2026-10-28",
+        },
       ];
       root.append(el("h2", t("example")));
       for (const sample of samples)

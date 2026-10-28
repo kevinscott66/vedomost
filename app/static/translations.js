@@ -42,7 +42,7 @@ window.VEDOMOST_TRANSLATIONS = {
     chooseStudent: "Выберите ученика",
     displayCurrency: "Валюта отображения",
     currencyNote:
-      "Учёт и ввод — UZS. Справочный пересчёт по дневным курсам. {rate} Источник: {source}; дата курса: {rateDate}; статус: {freshness}. Последнее получение: {fetchedAt}.",
+      "Тарифы и долг учитываются в UZS. Здесь меняется только отображение сумм. {rate} Источник: {source}; дата курса: {rateDate}; статус: {freshness}. Последнее получение: {fetchedAt}.",
     currencySourceCBU: "Центральный банк Узбекистана",
     currencySourceCBR: "Банк России (кросс-курс)",
     currencySourceReference: "справочный резервный курс",
@@ -52,7 +52,9 @@ window.VEDOMOST_TRANSLATIONS = {
     currencyLoading: "загрузка",
     currencyNeverFetched: "ещё не загружен",
     currencyUnit: "сум",
-    amount: "Сумма, сум",
+    amount: "Сумма оплаты",
+    paymentCurrency: "Валюта оплаты",
+    baseEquivalent: "В учёт: {amount}",
     amountPlaceholder: "Введите сумму",
     date: "Дата",
     save: "Сохранить",
@@ -126,11 +128,11 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Коды ответов",
     apiRules: "Расчёты и ограничения",
     apiRuleText:
-      "В этой демоверсии используется узбекский сум (UZS). Язык и валюта отображения выбираются отдельно. RUB/USD — справочный пересчёт по автоматически получаемому дневному курсу; источник, дата и состояние обновления показаны в интерфейсе. API и ввод остаются в UZS. Денежные значения передаются строками с двумя знаками после запятой. Начисления начинаются с start_month. Оплаты раньше этого месяца не принимаются; прошлые месяцы после начала доступны. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
+      "Тарифы и долг учитываются в UZS. Для каждой оплаты можно отдельно указать сумму и валюту UZS, RUB или USD; иностранные оплаты сохраняют сумму, валюту и зафиксированный эквивалент в UZS с данными курса. Язык и валюта отображения выбираются отдельно; RUB/USD при отображении — справочный пересчёт. Денежные значения API передаются строками с двумя знаками после запятой. Начисления начинаются с start_month. Оплаты раньше этого месяца не принимаются; прошлые месяцы после начала доступны. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
     apiStudentsText:
       "POST /students — создать; GET /students — список; GET /students/{id} — получить; PUT /students/{id} — заменить все поля; DELETE /students/{id} — удалить ученика без оплат.",
     apiPaymentsText:
-      "POST /payments — добавить оплату; GET /students/{id}/payments — история конкретного ученика.",
+      "POST /payments с amount и currency — добавить оплату; GET /students/{id}/payments — история с исходной суммой и валютой, а также эквивалентом в UZS.",
     apiDebtorsText:
       "GET /debtors?month=YYYY-MM — ученики с положительным долгом и общий остаток.",
     apiErrorsText:
@@ -191,7 +193,7 @@ window.VEDOMOST_TRANSLATIONS = {
     chooseStudent: "Select a student",
     displayCurrency: "Display currency",
     currencyNote:
-      "Records and inputs use UZS. Conversion is indicative and uses daily rates. {rate} Source: {source}; rate date: {rateDate}; status: {freshness}. Last fetched: {fetchedAt}.",
+      "Fees and debt are accounted in UZS. This selector changes how amounts are displayed. {rate} Source: {source}; rate date: {rateDate}; status: {freshness}. Last fetched: {fetchedAt}.",
     currencySourceCBU: "Central Bank of Uzbekistan",
     currencySourceCBR: "Bank of Russia (cross-rate)",
     currencySourceReference: "reference fallback rate",
@@ -201,7 +203,9 @@ window.VEDOMOST_TRANSLATIONS = {
     currencyLoading: "loading",
     currencyNeverFetched: "never fetched",
     currencyUnit: "UZS",
-    amount: "Amount, UZS",
+    amount: "Payment amount",
+    paymentCurrency: "Payment currency",
+    baseEquivalent: "Booked: {amount}",
     amountPlaceholder: "Enter amount",
     date: "Date",
     save: "Save",
@@ -275,11 +279,11 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Response codes",
     apiRules: "Calculation rules and limits",
     apiRuleText:
-      "This demo uses the Uzbek sum (UZS). Language and display currency are independent. RUB/USD use automatically retrieved indicative daily rates; the interface shows the source, date and update status. API and input amounts remain UZS. Money is represented by decimal strings with two fractional digits. Fees start at start_month. Earlier payments are rejected; historical months after enrollment remain available. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
+      "Fees and debt are accounted in UZS. Each payment has a separate amount and currency selector for UZS, RUB or USD; foreign payments retain their original amount and currency plus a frozen UZS equivalent and rate details. Language and display currency are independent; RUB/USD display conversion is indicative. API money values are decimal strings with two fractional digits. Fees start at start_month. Earlier payments are rejected; historical months after enrollment remain available. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
     apiStudentsText:
       "POST /students — create; GET /students — list; GET /students/{id} — retrieve; PUT /students/{id} — replace all fields; DELETE /students/{id} — delete a student without payments.",
     apiPaymentsText:
-      "POST /payments — add a payment; GET /students/{id}/payments — payment history for one student.",
+      "POST /payments with amount and currency — add a payment; GET /students/{id}/payments — history with original amount/currency and UZS equivalent.",
     apiDebtorsText:
       "GET /debtors?month=YYYY-MM — students with positive balances and the total outstanding amount.",
     apiErrorsText:
@@ -341,7 +345,7 @@ window.VEDOMOST_TRANSLATIONS = {
     chooseStudent: "O‘quvchini tanlang",
     displayCurrency: "Ko‘rsatish valyutasi",
     currencyNote:
-      "Hisob va kiritish — UZS. Ma’lumot uchun konvertatsiya kunlik kurslardan foydalanadi. {rate} Manba: {source}; kurs sanasi: {rateDate}; holat: {freshness}. Oxirgi yuklash: {fetchedAt}.",
+      "Tarif va qarz UZSda hisoblanadi. Bu tanlov faqat summalar ko‘rinishini o‘zgartiradi. {rate} Manba: {source}; kurs sanasi: {rateDate}; holat: {freshness}. Oxirgi yuklash: {fetchedAt}.",
     currencySourceCBU: "O‘zbekiston Markaziy banki",
     currencySourceCBR: "Rossiya banki (kross-kurs)",
     currencySourceReference: "ma’lumot uchun zaxira kursi",
@@ -351,7 +355,9 @@ window.VEDOMOST_TRANSLATIONS = {
     currencyLoading: "yuklanmoqda",
     currencyNeverFetched: "hali yuklanmagan",
     currencyUnit: "so‘m",
-    amount: "Summa, so‘m",
+    amount: "To‘lov summasi",
+    paymentCurrency: "To‘lov valyutasi",
+    baseEquivalent: "Hisobga: {amount}",
     amountPlaceholder: "Summani kiriting",
     date: "Sana",
     save: "Saqlash",
@@ -425,11 +431,11 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Javob kodlari",
     apiRules: "Hisoblash qoidalari va cheklovlar",
     apiRuleText:
-      "Bu demoda O‘zbekiston so‘mi (UZS) ishlatiladi. Til va ko‘rsatish valyutasi alohida tanlanadi. RUB/USD avtomatik olinadigan kunlik kurs bo‘yicha ma’lumot uchun hisoblanadi; manba, sana va yangilanish holati interfeysda ko‘rsatiladi. API va kiritish UZSda qoladi. Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. Hisoblash start_monthdan boshlanadi. Undan oldingi to‘lovlar qabul qilinmaydi; keyingi eski oylar ochiq. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
+      "Tarif va qarz UZSda hisoblanadi. Har bir to‘lov uchun UZS, RUB yoki USD summasi va valyutasi alohida belgilanadi; xorijiy to‘lovda asl summa, valyuta va kurs ma’lumotlari bilan UZSdagi o‘zgarmas ekvivalent saqlanadi. Til va ko‘rsatish valyutasi alohida; RUB/USD ko‘rinishi ma’lumot uchun konvertatsiyadir. API pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. Hisoblash start_monthdan boshlanadi. Undan oldingi to‘lovlar qabul qilinmaydi; keyingi eski oylar ochiq. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
     apiStudentsText:
       "POST /students — yaratish; GET /students — ro‘yxat; GET /students/{id} — olish; PUT /students/{id} — barcha maydonlarni almashtirish; DELETE /students/{id} — to‘lovlari yo‘q o‘quvchini o‘chirish.",
     apiPaymentsText:
-      "POST /payments — to‘lov qo‘shish; GET /students/{id}/payments — bitta o‘quvchining to‘lovlari tarixi.",
+      "POST /payments amount va currency bilan — to‘lov qo‘shish; GET /students/{id}/payments — asl summa, valyuta va UZS ekvivalenti bilan tarix.",
     apiDebtorsText:
       "GET /debtors?month=YYYY-MM — qarzdor o‘quvchilar va jami qarz.",
     apiErrorsText:

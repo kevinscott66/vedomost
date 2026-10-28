@@ -94,6 +94,12 @@ def test_schema_upgrade_preserves_records_and_constraints(tmp_path):
         assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert db.execute("PRAGMA foreign_key_check").fetchall() == []
         assert db.execute("SELECT amount_cents FROM payments").fetchone()[0] == 20000000
+        legacy = db.execute(
+            "SELECT original_amount_cents,currency,exchange_rate,rate_date,rate_source "
+            "FROM payments"
+        ).fetchone()
+        assert tuple(legacy) == (20000000, "UZS", "1", None, None)
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
         with pytest.raises(sqlite3.IntegrityError):
             db.execute("DELETE FROM students WHERE id=1")
 

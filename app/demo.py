@@ -31,8 +31,9 @@ def main():
                 )
                 if paid:
                     db.execute(
-                        "INSERT INTO payments(student_id,amount_cents,paid_on) VALUES(?,?,?)",
-                        (cursor.lastrowid, paid, day),
+                        "INSERT INTO payments(student_id,amount_cents,paid_on,"
+                        "original_amount_cents,currency,exchange_rate) VALUES(?,?,?,?,'UZS','1')",
+                        (cursor.lastrowid, paid, day, paid),
                     )
 
     seed()

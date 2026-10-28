@@ -12,6 +12,18 @@ const number = (value) =>
   }).format(window.currency.convert(value)) +
   "\u00a0" +
   window.currency.unit;
+const paymentNumber = (value, currency) => {
+  const unit =
+    currency === "UZS" ? t("currencyUnit") : currency === "RUB" ? "₽" : "$";
+  return (
+    new Intl.NumberFormat(window.i18n.locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(value)) +
+    "\u00a0" +
+    unit
+  );
+};
 let students = [],
   deleteId = null,
   generation = 0;
@@ -254,6 +266,7 @@ function renderDebtors(report) {
         clearValidation($("payment-form"));
         $("pay-student").value = s.id;
         $("pay-amount").value = s.debt;
+        $("pay-currency").value = "UZS";
         paymentContextMonth = report.month;
         if ($("pay-date").value.slice(0, 7) !== report.month)
           $("pay-date").value = "";
@@ -441,6 +454,7 @@ $("payment-form").onsubmit = async (event) => {
     const payload = {
       student_id: Number($("pay-student").value),
       amount: $("pay-amount").value,
+      currency: $("pay-currency").value,
       date: $("pay-date").value,
     };
     const body = JSON.stringify(payload);
@@ -485,7 +499,13 @@ async function history(s) {
             new Date(p.date + "T12:00:00"),
           ),
         ),
-        node("strong", number(p.amount)),
+        node(
+          "strong",
+          paymentNumber(p.amount, p.currency) +
+            (p.currency !== "UZS" && p.base_amount != null
+              ? ` · ${t("baseEquivalent", { amount: paymentNumber(p.base_amount, "UZS") })}`
+              : ""),
+        ),
       );
       $("history-list").append(row);
     }

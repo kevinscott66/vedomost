@@ -7,7 +7,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Какие данные обрабатываются",
-        "Формы позволяют ввести имя, телефон, группу, месяц начала обучения, месячный тариф, сумму и дату оплаты. В демонстрации используйте только вымышленные сведения. Записи передаются браузером локальному серверу для ведения журнала и расчёта долга; реквизиты банковских карт, паспортные данные и платёжные токены приложение не запрашивает.",
+        "Формы позволяют ввести имя, телефон, группу, месяц начала обучения, месячный тариф, исходные сумму и валюту оплаты и дату. Для платежа также сохраняются эквивалент в UZS и сведения о применённом курсе. В демонстрации используйте только вымышленные сведения. Записи передаются браузером локальному серверу для ведения журнала и расчёта долга; реквизиты банковских карт, паспортные данные и платёжные токены приложение не запрашивает.",
       ],
       [
         "Хранение, доступ и сроки",
@@ -37,7 +37,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Правила расчёта",
-        "Начисления начинаются с указанного месяца начала обучения. Текущий тариф ученика сравнивается с оплатами за выбранный календарный месяц. Переплата не переносится; изменение тарифа влияет и на прошлые месяцы. Учёт и ввод ведутся в UZS. RUB и USD служат для справочного отображения и не меняют суммы в базе. Курс проверяется автоматически; источник, дата курса и время получения показаны в интерфейсе. При сбое используется последний сохранённый курс с отметкой об устаревании, а до первой загрузки — явно обозначенный резервный курс.",
+        "Начисления начинаются с указанного месяца начала обучения. Тариф и долг рассчитываются в UZS; переплата не переносится, изменение тарифа влияет и на прошлые месяцы. Платёж вводится в UZS, RUB или USD. При записи сохраняются исходные сумма и валюта, неизменяемый эквивалент в UZS и сведения об официальном курсе. Для RUB/USD нужен свежий официальный курс сервера; для задней даты применяется курс на момент записи. Без свежего курса иностранный платёж не записывается, а UZS работает офлайн. Суммы округляются до сотых по правилу half up. Переключатель валюты показа использует текущий справочный курс и не меняет тарифы или записанные платежи.",
       ],
       [
         "Доступ и использование",
@@ -71,7 +71,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Qanday ma’lumotlar qayta ishlanadi",
-        "Shakllarga ism, telefon, guruh, o‘qish boshlangan oy, oylik to‘lov, to‘lov summasi va sanasini kiritish mumkin. Demoda faqat xayoliy ma’lumotlardan foydalaning. Brauzer ularni hisob yuritish va qarzni hisoblash uchun mahalliy serverga yuboradi. Bank kartasi rekvizitlari, pasport ma’lumotlari va to‘lov tokenlari so‘ralmaydi.",
+        "Shakllarga ism, telefon, guruh, o‘qish boshlangan oy, oylik tarif, to‘lovning dastlabki summasi va valyutasi hamda sanasini kiritish mumkin. To‘lov uchun UZSdagi ekvivalent va qo‘llangan kurs ma’lumotlari ham saqlanadi. Demoda faqat xayoliy ma’lumotlardan foydalaning. Brauzer yozuvlarni hisob yuritish va qarzni hisoblash uchun mahalliy serverga yuboradi. Bank kartasi rekvizitlari, pasport ma’lumotlari va to‘lov tokenlari so‘ralmaydi.",
       ],
       [
         "Saqlash, kirish va muddatlar",
@@ -101,7 +101,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Hisoblash qoidalari",
-        "Hisoblash ko‘rsatilgan o‘qish boshlangan oydan boshlanadi. O‘quvchining joriy oylik tarifi tanlangan kalendar oy to‘lovlari bilan taqqoslanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi; tarif o‘zgarishi oldingi oylar hisobiga ham ta’sir qiladi. Hisob yuritish va kiritish UZSda amalga oshiriladi. RUB va USD ma’lumot uchun ko‘rsatiladi; bazadagi summalar o‘zgarmaydi. Kurs avtomatik tekshiriladi; manba, kurs sanasi va olingan vaqt interfeysda ko‘rsatiladi. Aloqa uzilsa, eskirgan deb belgilangan oxirgi saqlangan kurs, birinchi yuklashgacha esa alohida belgilangan zaxira kurs ishlatiladi.",
+        "Hisoblash ko‘rsatilgan o‘qish boshlangan oydan boshlanadi. Tarif va qarz UZSda hisoblanadi; ortiqcha to‘lov boshqa oyga o‘tmaydi, tarif o‘zgarishi oldingi oylarga ham ta’sir qiladi. To‘lov UZS, RUB yoki USDda kiritiladi. Dastlabki summa va valyuta, UZSdagi o‘zgarmas ekvivalent va qo‘llangan rasmiy kurs ma’lumotlari saqlanadi. RUB/USD uchun serverda yangi rasmiy kurs bo‘lishi kerak; oldingi sana kiritilsa ham, yozuv paytidagi kurs qo‘llanadi. Yangi kurs bo‘lmasa, chet el valyutasidagi to‘lov yozilmaydi; UZS internetsiz ishlaydi. Summalar half up qoidasi bilan yuzdan birgacha yaxlitlanadi. Ko‘rsatish valyutasi almashtirgichi joriy ma’lumot kursidan foydalanadi va tariflar yoki yozilgan to‘lovlarni o‘zgartirmaydi.",
       ],
       [
         "Foydalanish",
@@ -135,7 +135,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Data and purpose",
-        "The forms accept a student’s name, phone, group, enrollment month, monthly fee, payment amount and date. Use fictional records only in this demo. The browser sends entries to the local server to maintain the ledger and calculate balances. The app does not request card details, identity documents or payment tokens and does not transfer money.",
+        "The forms accept a student’s name, phone, group, enrollment month, monthly fee, and a payment’s original amount, currency and date. Each payment also stores its UZS equivalent and applied rate details. Use fictional records only in this demo. The browser sends entries to the local server to maintain the ledger and calculate balances. The app does not request card details, identity documents or payment tokens and does not transfer money.",
       ],
       [
         "Storage and retention",
@@ -169,7 +169,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Calculation rules",
-        "Charges start in the recorded enrollment month. The current monthly fee is compared with payments in the selected calendar month. Overpayments do not carry forward; changing a fee also changes past monthly balances. Records and inputs use UZS. RUB and USD are indicative displays and do not change stored amounts. Rates are checked automatically; the interface shows the source, effective date and retrieval time. If an update fails, the last saved rate is marked as outdated; before the first successful load, a clearly labelled reference rate is used.",
+        "Charges start in the recorded enrollment month. Tariffs and debt are calculated in UZS. Overpayments do not carry forward; changing a fee also changes past monthly balances. Payments may be entered in UZS, RUB or USD. Each record keeps the original amount and currency, an immutable UZS equivalent, and the applied official rate details. RUB/USD payments require a fresh official server rate; a backdated payment uses the rate available when recorded, not the historical rate for its payment date. Without a fresh rate, foreign-currency payments cannot be recorded; UZS works offline. Amounts are rounded to hundredths using half up. The display-currency switch uses current indicative rates and does not change tariffs or booked payments.",
       ],
       [
         "Permitted use",

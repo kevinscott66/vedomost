@@ -110,5 +110,10 @@ def test_enrollment_migration_keeps_earliest_known_history(tmp_path):
     with database.connect() as db:
         assert db.execute("SELECT start_month FROM students").fetchone()[0] == "2020-02"
         assert db.execute("SELECT paid_on FROM payments").fetchone()[0] == "2020-02-29"
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert tuple(
+            db.execute(
+                "SELECT original_amount_cents,currency,exchange_rate FROM payments"
+            ).fetchone()
+        ) == (50, "UZS", "1")
         assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
