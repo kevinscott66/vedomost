@@ -1398,5 +1398,28 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
-.currency-note summary { cursor: pointer; font-size: 12px; }
-.currency-note p { margin: 8px 0 0; }
+.currency-note summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.currency-note summary::-webkit-details-marker { display: none; }
+.currency-note summary::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+.currency-note[open] summary::after { transform: translateY(1px) rotate(225deg); }
+.currency-note summary:hover { color: var(--text); }
+.currency-note summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.currency-note p { margin: 8px 0 0; font-size: 11px; }

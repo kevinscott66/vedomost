@@ -1,6 +1,7 @@
 window.VEDOMOST_TRANSLATIONS = {
   ru: {
-    exchangeDetails: "Курс валют",
+    exchangeDetails: "Курсы",
+    currencyAsOf: "на {date}",
     paymentRateUnavailable: "Нет свежего официального курса. Оплата не записана. Повторите позже или укажите фактически полученную сумму в UZS.",
     paymentAmountLimit: "Эквивалент оплаты в UZS выходит за допустимый диапазон.",
     paymentTotalLimit: "Общая сумма оплат ученика за этот месяц превышает допустимый диапазон. Оплата не записана.",
@@ -159,7 +160,8 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Укажите положительный целый ID ученика.",
   },
   en: {
-    exchangeDetails: "Exchange rate",
+    exchangeDetails: "Rates",
+    currencyAsOf: "as of {date}",
     paymentRateUnavailable: "A fresh official rate is unavailable. The payment was not recorded. Retry later or enter the amount actually received in UZS.",
     paymentAmountLimit: "The UZS payment equivalent is outside the supported range.",
     paymentTotalLimit: "This student’s monthly payment total exceeds the supported range. The payment was not recorded.",
@@ -317,7 +319,8 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Enter a positive integer student ID.",
   },
   uz: {
-    exchangeDetails: "Valyuta kursi",
+    exchangeDetails: "Kurslar",
+    currencyAsOf: "{date} holatiga",
     paymentRateUnavailable: "Yangi rasmiy kurs mavjud emas. To‘lov saqlanmadi. Keyinroq qayta urinib ko‘ring yoki amalda olingan UZS summasini kiriting.",
     paymentAmountLimit: "To‘lovning UZS ekvivalenti ruxsat etilgan oraliqdan tashqarida.",
     paymentTotalLimit: "Ushbu o‘quvchining oylik to‘lovlar jami ruxsat etilgan chegaradan oshdi. To‘lov saqlanmadi.",

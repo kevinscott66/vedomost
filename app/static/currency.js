@@ -102,7 +102,17 @@
         ? ""
         : `1 ${selected} = ${new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 2 }).format(rates[selected])} UZS.`;
     const summary = document.getElementById("currency-summary");
-    if (summary) summary.textContent = `${window.i18n.t("exchangeDetails")} · ${labels[loading ? "loading" : status]}`;
+    if (summary) {
+      const dated = window.i18n.t("currencyAsOf", { date: fmtDate(rateDate) });
+      const quote = selected === "UZS"
+        ? window.i18n.t("exchangeDetails")
+        : `1 ${{ RUB: "₽", USD: "$" }[selected]} = ${new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 2 }).format(rates[selected])} ${window.i18n.t("currencyUnit")}`;
+      summary.textContent = loading
+        ? labels.loading
+        : status === "fresh"
+          ? `${quote} · ${dated}`
+          : `${quote} · ${labels[status]}`;
+    }
     note.textContent = window.i18n.t("currencyNote", {
       rate,
       source: names[source],
