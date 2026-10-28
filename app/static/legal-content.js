@@ -33,7 +33,7 @@ window.VEDOMOST_LEGAL = {
     terms: [
       [
         "Назначение",
-        "«Ведомость» — демонстрационная программа для оценки тестового проекта и ознакомления с исходным кодом. Используйте вымышленные данные. Приложение не является платёжным оператором, онлайн-кассой, бухгалтерской системой или услугой учебного центра.",
+        "«Ведомость» — локальная демонстрация мини-учёта оплат для оценки тестового проекта. Используйте вымышленные записи об учениках и оплатах. Программа записывает полученные оплаты, не переводит деньги и не формирует кассовые чеки или бухгалтерскую отчётность.",
       ],
       [
         "Правила расчёта",
@@ -41,7 +41,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Доступ и использование",
-        "Открытый репозиторий разрешает ознакомление и локальную оценку в пределах LICENSE.txt. Коммерческое внедрение, распространение и перепродажа без письменного разрешения не предоставлены. Никаких платных подписок, оферт на обучение и автоматического заключения договора с учебным центром в приложении нет.",
+        "Лицензия в LICENSE.txt разрешает ознакомление с исходным кодом и локальную оценку проекта. Для коммерческого внедрения, распространения и перепродажи нужно письменное разрешение. В приложении нет платных подписок, оферты на обучение или оформления договора с учебным центром.",
       ],
       [
         "Ограничения",
@@ -97,7 +97,7 @@ window.VEDOMOST_LEGAL = {
     terms: [
       [
         "Maqsad",
-        "«Vedomost» — sinov loyihasini baholash va manba kodi bilan tanishish uchun demo dastur. Faqat xayoliy ma’lumotlardan foydalaning. U to‘lov tashkiloti, onlayn kassa, buxgalteriya tizimi yoki o‘quv markazi xizmati emas.",
+        "«Vedomost» — sinov loyihasini baholash uchun to‘lovlar hisobining mahalliy demosi. O‘quvchilar va to‘lovlar haqida faqat xayoliy ma’lumotlardan foydalaning. Dastur olingan to‘lovlarni qayd etadi, pul o‘tkazmaydi, fiskal cheklar yoki buxgalteriya hisobotlarini yaratmaydi.",
       ],
       [
         "Hisoblash qoidalari",
@@ -165,7 +165,7 @@ window.VEDOMOST_LEGAL = {
     terms: [
       [
         "Purpose",
-        "Vedomost is a demonstration program for reviewing a candidate exercise and its source code. Use fictional data. It is not a payment processor, banking product, certified accounting system or a hosted learning-centre service.",
+        "Vedomost is a local demonstration of a payment ledger for reviewing a candidate exercise. Use fictional student and payment records. It records payments already received; it does not transfer money, issue fiscal receipts or prepare financial statements.",
       ],
       [
         "Calculation rules",
