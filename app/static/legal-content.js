@@ -23,7 +23,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Россия: перед обработкой реальных данных",
-        "Для реального использования оператор должен определить цели, состав данных и законное основание по Федеральному закону №152-ФЗ, опубликовать собственную политику, организовать защиту и исполнение прав субъектов. Применимость уведомления Роскомнадзора, локализации, согласий и правил обработки данных детей проверяется для конкретного оператора и схемы работы. Эти сведения, юридический адрес, сроки хранения и ответственный за обращения здесь не выдумываются: реальный оператор учебного центра пока не определён.",
+        "Для реального использования оператор должен определить цели, состав данных и законное основание по Федеральному закону №152-ФЗ, опубликовать собственную политику, организовать защиту и исполнение прав субъектов. Применимость уведомления Роскомнадзора, локализации, согласий и правил обработки данных детей проверяется для конкретного оператора и схемы работы. Реальный оператор учебного центра, его адрес, сроки хранения и контакт для обращений в этой демонстрации не определены.",
       ],
       [
         "Обращения",
@@ -37,7 +37,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Правила расчёта",
-        "Текущий тариф ученика сравнивается с суммой оплат за выбранный календарный месяц. Переплата не переносится, изменение тарифа влияет на пересчёт прошлого. Валюта заданием не установлена; одна установка предполагает одну денежную единицу без конвертации.",
+        "Начисления начинаются с указанного месяца начала обучения. Текущий тариф ученика сравнивается с оплатами за выбранный календарный месяц. Переплата не переносится; изменение тарифа влияет и на прошлые месяцы. Учёт и ввод ведутся в UZS. RUB и USD служат только для справочного отображения по снимку курса от 28.10.2026 и не меняют суммы в базе.",
       ],
       [
         "Доступ и использование",
@@ -87,7 +87,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "O‘zbekiston: haqiqiy ma’lumotlardan oldin",
-        "Amaliy ishga tushirishdan oldin ma’lumotlar mulkdori va operatori O‘RQ-547-son «Shaxsga doir ma’lumotlar to‘g‘risida»gi Qonunga muvofiq maqsadlar, zarur ma’lumotlar, ishlov berish asosi va himoya choralarini belgilashi kerak. Rozilik, bazani ro‘yxatdan o‘tkazish, saqlash joyi, transchegaraviy uzatish va voyaga yetmaganlar ma’lumotlariga oid talablarning qo‘llanishi haqiqiy ish sharoitiga qarab tekshiriladi. O‘quv markazining haqiqiy operatori, manzili, saqlash muddatlari va murojaatlar uchun mas’ul shaxs hali belgilanmagan; ular bu yerda to‘qib yozilmagan.",
+        "Amaliy ishga tushirishdan oldin ma’lumotlar mulkdori va operatori O‘RQ-547-son «Shaxsga doir ma’lumotlar to‘g‘risida»gi Qonunga muvofiq maqsadlar, zarur ma’lumotlar, ishlov berish asosi va himoya choralarini belgilashi kerak. Rozilik, bazani ro‘yxatdan o‘tkazish, saqlash joyi, transchegaraviy uzatish va voyaga yetmaganlar ma’lumotlariga oid talablarning qo‘llanishi haqiqiy ish sharoitiga qarab tekshiriladi. Demoda o‘quv markazining haqiqiy operatori, manzili, saqlash muddatlari va murojaatlar uchun mas’ul shaxs belgilanmagan.",
       ],
       [
         "Murojaatlar",
@@ -101,7 +101,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Hisoblash qoidalari",
-        "O‘quvchining joriy oylik tarifi tanlangan kalendar oy to‘lovlari bilan taqqoslanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi; tarif o‘zgarsa, oldingi oylar ham joriy tarif bo‘yicha qayta hisoblanadi. Valyuta belgilanmagan: bitta o‘rnatmada konvertatsiyasiz bitta pul birligi qo‘llanadi.",
+        "Hisoblash ko‘rsatilgan o‘qish boshlangan oydan boshlanadi. O‘quvchining joriy oylik tarifi tanlangan kalendar oy to‘lovlari bilan taqqoslanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi; tarif o‘zgarishi oldingi oylar hisobiga ham ta’sir qiladi. Hisob yuritish va kiritish UZSda amalga oshiriladi. RUB va USD faqat 28.10.2026 sanasidagi kurs bo‘yicha ma’lumot uchun ko‘rsatiladi; bazadagi summalar o‘zgarmaydi.",
       ],
       [
         "Foydalanish",
@@ -169,7 +169,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Calculation rules",
-        "The current monthly fee is compared with payments in the selected calendar month. Overpayments do not carry forward; changing a fee also changes historical recalculations. No currency is prescribed: one installation assumes one monetary unit without conversion.",
+        "Charges start in the recorded enrollment month. The current monthly fee is compared with payments in the selected calendar month. Overpayments do not carry forward; changing a fee also changes past monthly balances. Records and inputs use UZS. RUB and USD are indicative displays using the rate snapshot dated 28 October 2026; they do not change stored amounts.",
       ],
       [
         "Permitted use",
