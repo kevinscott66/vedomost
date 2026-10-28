@@ -14,7 +14,9 @@ def client(tmp_path):
 
 
 def student(client, fee="1000.00", **changes):
-    data = dict(name="Анна", phone="+7 000 000-00-00", group="А2", monthly_fee=fee)
+    data = dict(
+        name="Анна", phone="+7 000 000-00-00", group="А2", monthly_fee=fee, start_month="2026-10"
+    )
     data.update(changes)
     response = client.post("/students", json=data)
     assert response.status_code == 201, response.text
@@ -63,7 +65,7 @@ def test_partial_full_overpayment_and_zero_fee(client):
 
 
 def test_month_boundaries_and_decimal_precision(client):
-    s = student(client, "0.30")
+    s = student(client, "0.30", start_month="2026-11")
     for amount, day in [
         ("9", "2026-11-30"),
         ("0.1", "2026-12-01"),
@@ -110,8 +112,8 @@ def test_not_found_and_bad_fields(client):
 
 
 def test_total_sort_and_current_tariff(client):
-    a = student(client, "100")
-    b = student(client, "200")
+    a = student(client, "100", start_month="2025-01")
+    b = student(client, "200", start_month="2025-01")
     rows = report(client)["debtors"]
     assert [r["id"] for r in rows] == [b["id"], a["id"]]
     assert Decimal(report(client)["total_debt"]) == Decimal("300")

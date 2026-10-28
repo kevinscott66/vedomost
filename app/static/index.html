@@ -9,6 +9,7 @@
     <script src="/static/translations.js" defer></script>
     <script src="/static/i18n.js" defer></script>
     <script src="/static/currency.js" defer></script>
+    <script src="/static/calendar.js" defer></script>
     <script src="/static/app.js" defer></script>
   </head>
   <body>
@@ -91,7 +92,7 @@
                 type="month"
                 required
                 min="0001-01"
-                max="9999-11" /></label
+                max="9999-12" /></label
             ><button
               id="next-month"
               aria-label="Следующий месяц"
@@ -243,6 +244,16 @@
             step="0.01"
             required
         /></label>
+        <label
+          ><span data-i18n="startMonth">Начало обучения</span
+          ><input
+            id="student-start"
+            type="month"
+            min="0001-01"
+            max="9999-12"
+            required
+        /></label>
+        <p class="muted" data-i18n="startMonthNote"></p>
         <p id="student-message" role="status" class="form-message"></p>
         <button id="save-student" class="primary">
           <span data-i18n="saveStudent">Сохранить ученика</span>

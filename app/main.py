@@ -9,9 +9,10 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, Header, HTTPException, Query, Response
+from fastapi import Path as PathParam
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from app.database import ROOT, STATIC, Database
 from app.security import LocalBoundaryMiddleware
@@ -22,21 +23,37 @@ Money = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)]
 MonthlyFee = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2)]
 
 
+MAX_ID = 2**63 - 1
+StudentId = Annotated[int, PathParam(gt=0, le=MAX_ID)]
+
+
 class StudentInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: Text
     phone: Phone
     group: Text
     monthly_fee: MonthlyFee
+    start_month: str | None = None
+
+    @field_validator("start_month")
+    @classmethod
+    def valid_start_month(cls, value):
+        if value is None:
+            return value
+        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", value):
+            raise ValueError("Use YYYY-MM for start_month")
+        date.fromisoformat(value + "-01")
+        return value
 
 
 class Student(StudentInput):
     id: int
+    start_month: str
 
 
 class PaymentInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    student_id: Annotated[int, Field(gt=0)]
+    student_id: Annotated[int, Field(gt=0, le=MAX_ID)]
     amount: Money
     date: date
 
@@ -64,18 +81,20 @@ def money(value: int) -> Decimal:
     return (Decimal(value) / 100).quantize(Decimal("0.01"))
 
 
-def month_bounds(month: str) -> tuple[str, str]:
+def month_bounds(month: str) -> tuple[str, str | None]:
     if not re.fullmatch(r"[0-9]{4}-[0-9]{2}", month):
         raise HTTPException(422, "Месяц должен быть в формате YYYY-MM")
     try:
         start = date.fromisoformat(month + "-01")
+        if month == "9999-12":
+            return start.isoformat(), None
         end = (
             date(start.year + 1, 1, 1)
             if start.month == 12
             else date(start.year, start.month + 1, 1)
         )
     except ValueError:
-        raise HTTPException(422, "Укажите существующий месяц с 0001-01 по 9999-11") from None
+        raise HTTPException(422, "Укажите существующий месяц с 0001-01 по 9999-12") from None
     return start.isoformat(), end.isoformat()
 
 
@@ -86,6 +105,7 @@ def student_dict(row: sqlite3.Row) -> dict:
         "phone": row["phone"],
         "group": row["group_name"],
         "monthly_fee": money(row["monthly_fee_cents"]),
+        "start_month": row["start_month"],
     }
 
 
@@ -124,7 +144,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
 
     api.mount("/static", StaticFiles(directory=STATIC), name="static")
 
-    def require_student(db, student_id: int):
+    def require_student(db, student_id: StudentId):
         row = db.execute("SELECT * FROM students WHERE id = ?", (student_id,)).fetchone()
         if row is None:
             raise HTTPException(404, "Ученик не найден")
@@ -172,35 +192,49 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
     def add_student(student: StudentInput):
         with connect(write=True) as db:
             cursor = db.execute(
-                "INSERT INTO students(name, phone, group_name, monthly_fee_cents) "
-                "VALUES(?, ?, ?, ?)",
-                (student.name, student.phone, student.group, minor_units(student.monthly_fee)),
-            )
-            return student_dict(require_student(db, cursor.lastrowid))
-
-    @api.get("/students/{student_id}", response_model=Student)
-    def get_student(student_id: int):
-        with connect() as db:
-            return student_dict(require_student(db, student_id))
-
-    @api.put("/students/{student_id}", response_model=Student)
-    def update_student(student_id: int, student: StudentInput):
-        with connect(write=True) as db:
-            require_student(db, student_id)
-            db.execute(
-                "UPDATE students SET name=?, phone=?, group_name=?, monthly_fee_cents=? WHERE id=?",
+                "INSERT INTO students(name, phone, group_name, monthly_fee_cents, start_month) "
+                "VALUES(?, ?, ?, ?, ?)",
                 (
                     student.name,
                     student.phone,
                     student.group,
                     minor_units(student.monthly_fee),
+                    student.start_month or date.today().strftime("%Y-%m"),
+                ),
+            )
+            return student_dict(require_student(db, cursor.lastrowid))
+
+    @api.get("/students/{student_id}", response_model=Student)
+    def get_student(student_id: StudentId):
+        with connect() as db:
+            return student_dict(require_student(db, student_id))
+
+    @api.put("/students/{student_id}", response_model=Student)
+    def update_student(student_id: StudentId, student: StudentInput):
+        with connect(write=True) as db:
+            existing = require_student(db, student_id)
+            start_month = student.start_month or existing["start_month"]
+            earliest = db.execute(
+                "SELECT MIN(substr(paid_on,1,7)) FROM payments WHERE student_id=?", (student_id,)
+            ).fetchone()[0]
+            if earliest and start_month > earliest:
+                raise HTTPException(409, "Начало обучения позже существующих оплат")
+            db.execute(
+                "UPDATE students SET name=?, phone=?, group_name=?, monthly_fee_cents=?, "
+                "start_month=? WHERE id=?",
+                (
+                    student.name,
+                    student.phone,
+                    student.group,
+                    minor_units(student.monthly_fee),
+                    start_month,
                     student_id,
                 ),
             )
             return student_dict(require_student(db, student_id))
 
     @api.delete("/students/{student_id}", status_code=204)
-    def delete_student(student_id: int):
+    def delete_student(student_id: StudentId):
         with connect(write=True) as db:
             require_student(db, student_id)
             if db.execute(
@@ -231,7 +265,9 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                         "SELECT * FROM payments WHERE id = ?", (prior["payment_id"],)
                     ).fetchone()
                     return payment_dict(row)
-            require_student(db, payment.student_id)
+            existing = require_student(db, payment.student_id)
+            if payment.date.isoformat()[:7] < existing["start_month"]:
+                raise HTTPException(422, "Дата оплаты раньше начала обучения")
             cursor = db.execute(
                 "INSERT INTO payments(student_id, amount_cents, paid_on) VALUES(?, ?, ?)",
                 (payment.student_id, minor_units(payment.amount), payment.date.isoformat()),
@@ -245,7 +281,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
             return payment_dict(row)
 
     @api.get("/students/{student_id}/payments", response_model=list[Payment])
-    def payments(student_id: int):
+    def payments(student_id: StudentId):
         with connect() as db:
             require_student(db, student_id)
             rows = db.execute(
@@ -262,12 +298,14 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                 """
                 SELECT s.*, COALESCE(SUM(p.amount_cents), 0) AS paid_cents
                 FROM students s
-                LEFT JOIN payments p ON p.student_id = s.id AND p.paid_on >= ? AND p.paid_on < ?
+                LEFT JOIN payments p ON p.student_id = s.id
+                    AND p.paid_on >= ? AND (? IS NULL OR p.paid_on < ?)
+                WHERE s.start_month <= ?
                 GROUP BY s.id
                 HAVING COALESCE(SUM(p.amount_cents), 0) < s.monthly_fee_cents
                 ORDER BY s.monthly_fee_cents - COALESCE(SUM(p.amount_cents), 0) DESC, s.id
             """,
-                (start, end),
+                (start, end, end, month),
             ).fetchall()
             result = [
                 dict(

@@ -3,6 +3,7 @@
 import os
 import sqlite3
 from contextlib import contextmanager
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,7 +39,7 @@ class Database:
     def initialize(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
-            if db.execute("PRAGMA user_version").fetchone()[0] > 1:
+            if db.execute("PRAGMA user_version").fetchone()[0] > 2:
                 raise RuntimeError("Database schema is newer than this application")
             db.execute("PRAGMA journal_mode = WAL")
             db.executescript("""
@@ -63,6 +64,20 @@ class Database:
                     payload TEXT NOT NULL,
                     payment_id INTEGER NOT NULL REFERENCES payments(id) ON DELETE RESTRICT
                 );
-                PRAGMA user_version = 1;
-                COMMIT;
+
             """)
+
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(students)")}
+            if "start_month" not in columns:
+                month = date.today().strftime("%Y-%m")
+                db.execute(
+                    f"ALTER TABLE students ADD COLUMN start_month TEXT NOT NULL DEFAULT '{month}'"
+                )
+                # No real enrollment date existed. Preserve known payment history;
+                # do not invent debt before the earliest recorded payment/current month.
+                db.execute(
+                    "UPDATE students SET start_month = MIN(start_month, COALESCE("
+                    "(SELECT MIN(substr(paid_on,1,7)) FROM payments WHERE student_id=students.id),"
+                    "start_month))"
+                )
+            db.execute("PRAGMA user_version = 2")

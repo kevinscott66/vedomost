@@ -25,8 +25,9 @@ def main():
                 ("Тимур Орлов", "Информатика · 10 класс", 60000000, 15000000),
             ]:
                 cursor = db.execute(
-                    "INSERT INTO students(name,phone,group_name,monthly_fee_cents) VALUES(?,?,?,?)",
-                    (name, "+7 000 000-00-00", group, fee),
+                    "INSERT INTO students(name,phone,group_name,monthly_fee_cents,start_month) "
+                    "VALUES(?,?,?,?,?)",
+                    (name, "+7 000 000-00-00", group, fee, day[:7]),
                 )
                 if paid:
                     db.execute(

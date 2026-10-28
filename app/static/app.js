@@ -19,6 +19,7 @@ let paymentPending = false;
 let studentPending = false;
 let paymentAttempt = null;
 let historyGeneration = 0;
+let paymentContextMonth = null;
 let lastReport = null,
   historyStudent = null;
 $("month").value = localDate().slice(0, 7);
@@ -52,6 +53,8 @@ async function request(path, options = {}) {
       if (typeof data.detail === "string") {
         const known = {
           "Ученик не найден": "studentMissing",
+          "Дата оплаты раньше начала обучения": "paymentBeforeStart",
+          "Начало обучения позже существующих оплат": "startAfterPayments",
           "Нельзя удалить ученика с оплатами: история должна сохраниться":
             "historyProtected",
         };
@@ -65,9 +68,11 @@ async function request(path, options = {}) {
           fields: data.detail
             .map((e) =>
               t(
-                { student_id: "student", monthly_fee: "monthlyFee" }[
-                  e.loc.at(-1)
-                ] || e.loc.at(-1),
+                {
+                  student_id: "student",
+                  monthly_fee: "monthlyFee",
+                  start_month: "startMonth",
+                }[e.loc.at(-1)] || e.loc.at(-1),
               ),
             )
             .join(", "),
@@ -107,6 +112,7 @@ function renderStudents() {
   if (students.some((s) => String(s.id) === selected))
     $("pay-student").value = selected;
   $("save-payment").disabled = paymentPending || !students.length;
+  paymentDateBounds();
   const list = $("students-list");
   list.replaceChildren();
   if (!students.length) {
@@ -120,6 +126,13 @@ function renderStudents() {
       node(
         "span",
         t("perMonth", { amount: number(s.monthly_fee) }),
+        "person-detail",
+      ),
+    );
+    info.append(
+      node(
+        "span",
+        t("enrolledFrom", { month: window.i18n.formatMonth(s.start_month) }),
         "person-detail",
       ),
     );
@@ -179,7 +192,13 @@ function renderDebtors(report) {
     return;
   }
   if (!report.debtors.length) {
-    list.append(empty(t("allPaid"), t("allPaidText")));
+    const active = students.some((s) => s.start_month <= report.month);
+    list.append(
+      empty(
+        t(active ? "allPaid" : "noCharges"),
+        t(active ? "allPaidText" : "noChargesText"),
+      ),
+    );
     return;
   }
   const head = node("div", undefined, "table-head");
@@ -198,6 +217,14 @@ function renderDebtors(report) {
       () => {
         $("pay-student").value = s.id;
         $("pay-amount").value = s.debt;
+        paymentContextMonth = report.month;
+        if ($("pay-date").value.slice(0, 7) !== report.month)
+          $("pay-date").value = "";
+        paymentDateBounds();
+        message(
+          "payment-message",
+          t("paymentPeriod", { month: window.i18n.formatMonth(report.month) }),
+        );
         $("payment-form").scrollIntoView({ block: "center" });
         $("pay-amount").focus();
       },
@@ -215,6 +242,11 @@ function renderDebtors(report) {
 }
 async function refresh() {
   monthLabel();
+  if (paymentContextMonth && paymentContextMonth !== $("month").value) {
+    paymentContextMonth = null;
+    paymentDateBounds();
+    message("payment-message", "");
+  }
   const ticket = ++generation;
   const month = $("month").value;
   if (!month) return;
@@ -253,12 +285,7 @@ function moveMonth(offset) {
   const index = year * 12 + month - 1 + offset;
   const nextYear = Math.floor(index / 12),
     nextMonth = (index % 12) + 1;
-  if (
-    nextYear < 1 ||
-    nextYear > 9999 ||
-    (nextYear === 9999 && nextMonth === 12)
-  )
-    return;
+  if (nextYear < 1 || nextYear > 9999) return;
   $("month").value =
     `${String(nextYear).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}`;
   refresh();
@@ -291,6 +318,7 @@ function editStudent(s = null) {
     ["fee", "monthly_fee"],
   ])
     $("student-" + field).value = s?.[key] ?? "";
+  $("student-start").value = s?.start_month ?? localDate().slice(0, 7);
   message("student-message", "");
   $("student-dialog").showModal();
 }
@@ -308,6 +336,7 @@ $("student-form").onsubmit = async (event) => {
     phone: $("student-phone").value,
     group: $("student-group").value,
     monthly_fee: $("student-fee").value,
+    start_month: $("student-start").value,
   };
   $("save-student").disabled = true;
   message("student-message", t("saving"));
@@ -325,9 +354,38 @@ $("student-form").onsubmit = async (event) => {
     $("save-student").disabled = false;
   }
 };
+function paymentDateBounds() {
+  const student = students.find((s) => String(s.id) === $("pay-student").value);
+  const date = $("pay-date");
+  date.min = student ? student.start_month + "-01" : "0001-01-01";
+  date.max = "9999-12-31";
+  if (paymentContextMonth) {
+    const bounds = window.ledgerCalendar.bounds(paymentContextMonth);
+    date.min = bounds.min;
+    date.max = bounds.max;
+  }
+}
+$("pay-student").addEventListener("change", () => {
+  paymentContextMonth = null;
+  paymentDateBounds();
+  message("payment-message", "");
+});
 $("payment-form").onsubmit = async (event) => {
   event.preventDefault();
   if (paymentPending) return;
+  if (
+    paymentContextMonth &&
+    $("pay-date").value.slice(0, 7) !== paymentContextMonth
+  ) {
+    message(
+      "payment-message",
+      t("paymentPeriod", {
+        month: window.i18n.formatMonth(paymentContextMonth),
+      }),
+      true,
+    );
+    return;
+  }
   paymentPending = true;
   const controls = [...event.currentTarget.querySelectorAll("input, select")];
   controls.forEach((control) => (control.disabled = true));

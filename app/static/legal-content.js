@@ -7,7 +7,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Какие данные обрабатываются",
-        "Формы позволяют ввести имя, телефон, группу, месячный тариф, сумму и дату оплаты. В демонстрации используйте только вымышленные сведения. Записи передаются браузером локальному серверу для ведения журнала и расчёта долга; реквизиты банковских карт, паспортные данные и платёжные токены приложение не запрашивает.",
+        "Формы позволяют ввести имя, телефон, группу, месяц начала обучения, месячный тариф, сумму и дату оплаты. В демонстрации используйте только вымышленные сведения. Записи передаются браузером локальному серверу для ведения журнала и расчёта долга; реквизиты банковских карт, паспортные данные и платёжные токены приложение не запрашивает.",
       ],
       [
         "Хранение, доступ и сроки",
@@ -71,7 +71,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Qanday ma’lumotlar qayta ishlanadi",
-        "Shakllarga ism, telefon, guruh, oylik to‘lov, to‘lov summasi va sanasini kiritish mumkin. Demoda faqat xayoliy ma’lumotlardan foydalaning. Brauzer ularni hisob yuritish va qarzni hisoblash uchun mahalliy serverga yuboradi. Bank kartasi rekvizitlari, pasport ma’lumotlari va to‘lov tokenlari so‘ralmaydi.",
+        "Shakllarga ism, telefon, guruh, o‘qish boshlangan oy, oylik to‘lov, to‘lov summasi va sanasini kiritish mumkin. Demoda faqat xayoliy ma’lumotlardan foydalaning. Brauzer ularni hisob yuritish va qarzni hisoblash uchun mahalliy serverga yuboradi. Bank kartasi rekvizitlari, pasport ma’lumotlari va to‘lov tokenlari so‘ralmaydi.",
       ],
       [
         "Saqlash, kirish va muddatlar",
@@ -135,7 +135,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Data and purpose",
-        "The forms accept a student’s name, phone, group, monthly fee, payment amount and date. Use fictional records only in this demo. The browser sends entries to the local server to maintain the ledger and calculate balances. The app does not request card details, identity documents or payment tokens and does not transfer money.",
+        "The forms accept a student’s name, phone, group, enrollment month, monthly fee, payment amount and date. Use fictional records only in this demo. The browser sends entries to the local server to maintain the ledger and calculate balances. The app does not request card details, identity documents or payment tokens and does not transfer money.",
       ],
       [
         "Storage and retention",

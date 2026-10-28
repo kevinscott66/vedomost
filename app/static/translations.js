@@ -1,5 +1,18 @@
 window.VEDOMOST_TRANSLATIONS = {
   ru: {
+    startMonth: "Начало обучения",
+    startMonthNote:
+      "До этого месяца тариф не начисляется. Для старых оплат укажите реальный месяц начала.",
+    enrolledFrom: "Начало: {month}",
+    paymentBeforeStart:
+      "Дата оплаты раньше начала обучения. Проверьте дату или месяц начала у ученика.",
+    startAfterPayments:
+      "Нельзя перенести начало обучения позже существующих оплат.",
+    noCharges: "Начислений ещё нет",
+    noChargesText: "В этом месяце ни один ученик ещё не начал обучение.",
+    paymentPeriod:
+      "Оплата за {month}. Укажите фактический день оплаты в этом месяце.",
+
     brand: "ведомость",
     appTitle: "Ведомость — оплаты учебного центра",
     home: "На главную",
@@ -104,7 +117,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Коды ответов",
     apiRules: "Расчёты и ограничения",
     apiRuleText:
-      "В этой демоверсии используется узбекский сум (UZS). Язык и валюта отображения выбираются отдельно. RUB/USD — справочный пересчёт по снимку курса от 28.10.2026; API и ввод остаются в UZS. Денежные значения передаются строками с двумя знаками после запятой. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
+      "В этой демоверсии используется узбекский сум (UZS). Язык и валюта отображения выбираются отдельно. RUB/USD — справочный пересчёт по снимку курса от 28.10.2026; API и ввод остаются в UZS. Денежные значения передаются строками с двумя знаками после запятой. Начисления начинаются с start_month. Оплаты раньше этого месяца не принимаются; прошлые месяцы после начала доступны. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
     apiStudentsText:
       "POST /students — создать; GET /students — список; GET /students/{id} — получить; PUT /students/{id} — заменить все поля; DELETE /students/{id} — удалить ученика без оплат.",
     apiPaymentsText:
@@ -128,6 +141,18 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Укажите положительный целый ID ученика.",
   },
   en: {
+    startMonth: "Enrollment month",
+    startMonthNote:
+      "No fees are charged before this month. For historical payments, set the actual enrollment month.",
+    enrolledFrom: "Enrolled: {month}",
+    paymentBeforeStart:
+      "Payment predates enrollment. Check the date or the student’s enrollment month.",
+    startAfterPayments: "Enrollment cannot be moved after existing payments.",
+    noCharges: "No charges yet",
+    noChargesText: "No student had enrolled by this month.",
+    paymentPeriod:
+      "Payment for {month}. Enter the actual payment day within this month.",
+
     brand: "vedomost",
     appTitle: "Vedomost — learning centre payments",
     home: "Back to app",
@@ -233,7 +258,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Response codes",
     apiRules: "Calculation rules and limits",
     apiRuleText:
-      "This demo uses the Uzbek sum (UZS). Language and display currency are independent. RUB/USD use an indicative rate snapshot dated 28 October 2026; API and input amounts remain UZS. Money is represented by decimal strings with two fractional digits. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
+      "This demo uses the Uzbek sum (UZS). Language and display currency are independent. RUB/USD use an indicative rate snapshot dated 28 October 2026; API and input amounts remain UZS. Money is represented by decimal strings with two fractional digits. Fees start at start_month. Earlier payments are rejected; historical months after enrollment remain available. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
     apiStudentsText:
       "POST /students — create; GET /students — list; GET /students/{id} — retrieve; PUT /students/{id} — replace all fields; DELETE /students/{id} — delete a student without payments.",
     apiPaymentsText:
@@ -257,6 +282,19 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Enter a positive integer student ID.",
   },
   uz: {
+    startMonth: "O‘qish boshlangan oy",
+    startMonthNote:
+      "Bu oydan oldin to‘lov hisoblanmaydi. Eski to‘lovlar uchun haqiqiy boshlanish oyini belgilang.",
+    enrolledFrom: "Boshlanish: {month}",
+    paymentBeforeStart:
+      "To‘lov o‘qish boshlanishidan oldin. Sana yoki o‘quvchining boshlanish oyini tekshiring.",
+    startAfterPayments:
+      "Boshlanish oyini mavjud to‘lovlardan keyinga ko‘chirib bo‘lmaydi.",
+    noCharges: "Hali hisoblanmagan",
+    noChargesText: "Bu oyda hech bir o‘quvchi hali o‘qishni boshlamagan.",
+    paymentPeriod:
+      "{month} uchun to‘lov. Shu oydagi haqiqiy to‘lov kunini kiriting.",
+
     brand: "vedomost",
     appTitle: "Vedomost — o‘quv markazi to‘lovlari",
     home: "Ilovaga qaytish",
@@ -362,7 +400,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Javob kodlari",
     apiRules: "Hisoblash qoidalari va cheklovlar",
     apiRuleText:
-      "Bu demoda O‘zbekiston so‘mi (UZS) ishlatiladi. Til va ko‘rsatish valyutasi alohida tanlanadi. RUB/USD 28.10.2026 kursi bo‘yicha ma’lumot uchun hisoblanadi; API va kiritish UZSda qoladi. Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
+      "Bu demoda O‘zbekiston so‘mi (UZS) ishlatiladi. Til va ko‘rsatish valyutasi alohida tanlanadi. RUB/USD 28.10.2026 kursi bo‘yicha ma’lumot uchun hisoblanadi; API va kiritish UZSda qoladi. Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. Hisoblash start_monthdan boshlanadi. Undan oldingi to‘lovlar qabul qilinmaydi; keyingi eski oylar ochiq. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
     apiStudentsText:
       "POST /students — yaratish; GET /students — ro‘yxat; GET /students/{id} — olish; PUT /students/{id} — barcha maydonlarni almashtirish; DELETE /students/{id} — to‘lovlari yo‘q o‘quvchini o‘chirish.",
     apiPaymentsText:

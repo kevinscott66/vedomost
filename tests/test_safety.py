@@ -18,7 +18,14 @@ def client(tmp_path):
 
 def create_student(client):
     r = client.post(
-        "/students", json={"name": "Demo", "phone": "000", "group": "A", "monthly_fee": "800000.00"}
+        "/students",
+        json={
+            "name": "Demo",
+            "phone": "000",
+            "group": "A",
+            "monthly_fee": "800000.00",
+            "start_month": "2026-10",
+        },
     )
     assert r.status_code == 201
     return r.json()["id"]

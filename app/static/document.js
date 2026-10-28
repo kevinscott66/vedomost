@@ -87,6 +87,7 @@
               phone: "+7 000 000-00-00",
               group: "A2",
               monthly_fee: "800000.00",
+              start_month: localDay.slice(0, 7),
             },
         null,
         2,
@@ -172,6 +173,7 @@
           phone: "+7 000 000-00-00",
           group: "A2",
           monthly_fee: "800000.00",
+          start_month: "2026-10",
         },
         { student_id: 1, amount: "200000.00", date: "2026-10-28" },
       ];
