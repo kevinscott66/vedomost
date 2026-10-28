@@ -1373,3 +1373,27 @@ textarea:focus-visible {
     min-height: 44px;
   }
 }
+
+.language-control,
+.currency-control {
+  position: relative;
+}
+.language-control select,
+.currency-control select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+}
+.language-control::after,
+.currency-control::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--text);
+  border-bottom: 1.5px solid var(--text);
+  transform: translateY(-75%) rotate(45deg);
+  pointer-events: none;
+}
