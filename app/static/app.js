@@ -24,6 +24,7 @@ let reportStatus = "loading";
 let paymentAttempt = null;
 let historyGeneration = 0;
 let paymentContextMonth = null;
+let paymentPeriodNotice = false;
 let lastReport = null,
   historyStudent = null;
 $("month").value = localDate().slice(0, 7);
@@ -87,11 +88,20 @@ async function request(path, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 function message(id, text, error = false) {
+  if (id === "payment-message") paymentPeriodNotice = false;
   $(id).textContent = text;
   const key = window.i18n.keyFor(text);
   if (key) $(id).dataset.statusKey = key;
   else delete $(id).dataset.statusKey;
   $(id).classList.toggle("error", error);
+}
+function showPaymentPeriod(error = false) {
+  message(
+    "payment-message",
+    t("paymentPeriod", { month: window.i18n.formatMonth(paymentContextMonth) }),
+    error,
+  );
+  paymentPeriodNotice = true;
 }
 function clearValidation(form) {
   form.querySelectorAll("input, select").forEach((control) => {
@@ -248,10 +258,7 @@ function renderDebtors(report) {
         if ($("pay-date").value.slice(0, 7) !== report.month)
           $("pay-date").value = "";
         paymentDateBounds();
-        message(
-          "payment-message",
-          t("paymentPeriod", { month: window.i18n.formatMonth(report.month) }),
-        );
+        showPaymentPeriod();
         $("payment-form").scrollIntoView({ block: "center" });
         $("pay-amount").focus();
       },
@@ -421,13 +428,7 @@ $("payment-form").onsubmit = async (event) => {
     paymentContextMonth &&
     $("pay-date").value.slice(0, 7) !== paymentContextMonth
   ) {
-    message(
-      "payment-message",
-      t("paymentPeriod", {
-        month: window.i18n.formatMonth(paymentContextMonth),
-      }),
-      true,
-    );
+    showPaymentPeriod(true);
     return;
   }
   paymentPending = true;
@@ -515,6 +516,8 @@ $("confirm-delete").onclick = async () => {
 refresh();
 
 function refreshDisplay() {
+  if (paymentPeriodNotice && paymentContextMonth)
+    showPaymentPeriod($("payment-message").classList.contains("error"));
   renderStudents();
   if (lastReport) renderDebtors(lastReport);
   else renderReportStatus();

@@ -369,3 +369,18 @@ test("month refresh removes old reports immediately, including display changes a
   assert.match(app.element("debt-list").textContent, /Beta/);
   assert.doesNotMatch(app.element("debt-list").textContent, /Alpha/);
 });
+
+test("payment period notice follows language without reviving a cleared notice", async () => {
+  const app = await runtime();
+  await app.payButtons()[0].fire("click");
+  app.context.window.i18n.formatMonth = (value) => `translated ${value}`;
+  await app.display("languagechange");
+  assert.match(app.element("payment-message").textContent, /translated/);
+  assert.equal(
+    app.element("payment-message").classList.contains("error"),
+    false,
+  );
+  await app.element("pay-student").fire("change");
+  await app.display("languagechange");
+  assert.equal(app.element("payment-message").textContent, "");
+});
