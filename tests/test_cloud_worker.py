@@ -121,3 +121,37 @@ def test_hosted_csrf_limits_and_expiry(hosted):
     db.execute("update sessions set expires=0")
     db.commit()
     assert a.get(BASE + "/students").status_code == 401
+
+
+def test_reopening_demo_renews_cookie_and_preserves_ledger(hosted):
+    a, _, db, module = hosted
+    init(a)
+    token = a.cookies.get(module.COOKIE)
+    created = a.post(
+        BASE + "/students",
+        json={
+            "name": "Returning visitor",
+            "phone": "000",
+            "group": "QA",
+            "monthly_fee": "100",
+            "start_month": "2026-01",
+        },
+    )
+    assert created.status_code == 201
+    now = int(module.datetime.now(module.timezone.utc).timestamp())
+    db.execute("UPDATE sessions SET expires=?", (now + 60,))
+    db.commit()
+    before = db.execute("SELECT state,version FROM sessions").fetchone()
+    resumed = a.post(BASE + "/session", json={})
+    assert resumed.status_code == 200
+    assert a.cookies.get(module.COOKIE) == token
+    assert f"Max-Age={90 * 86400}" in resumed.headers["set-cookie"]
+    assert resumed.json()["expires_at"] >= now + 90 * 86400
+    after = db.execute("SELECT state,version FROM sessions").fetchone()
+    assert tuple(after) == tuple(before)
+    assert len(a.get(BASE + "/students").json()) == 5
+    db.execute("UPDATE sessions SET expires=0")
+    db.commit()
+    assert a.post(BASE + "/session", json={}).status_code == 200
+    assert a.cookies.get(module.COOKIE) != token
+    assert len(a.get(BASE + "/students").json()) == 4

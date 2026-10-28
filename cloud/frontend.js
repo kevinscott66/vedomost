@@ -40,9 +40,9 @@
   };
 
   const labels = {
-    ru: "Демо · вымышленные данные · сеанс на 24 часа.",
-    uz: "Demo · xayoliy ma’lumotlar · seans 24 soat.",
-    en: "Demo · fictional data · 24-hour session.",
+    ru: "Демо · вымышленные данные.",
+    uz: "Demo · xayoliy ma’lumotlar.",
+    en: "Demo · fictional data.",
   };
   function addNotice() {
     if (document.querySelector(".demo-notice")) return;

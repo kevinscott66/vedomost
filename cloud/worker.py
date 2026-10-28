@@ -15,7 +15,7 @@ from workers import asgi, fetch
 
 BASE = "/demos/vedomost"
 COOKIE = "__Secure-vedomost-demo"
-TTL = 86400
+TTL = 90 * 86400
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 
@@ -30,6 +30,20 @@ def field(obj, key, default=None):
 
 def output(data=None, status=200):
     return Response(status_code=status) if status == 204 else JSONResponse(data, status_code=status)
+
+
+def session_response(token, expires):
+    response = output({"expires_at": expires, "mode": "demo"})
+    response.set_cookie(
+        COOKIE,
+        token,
+        max_age=TTL,
+        secure=True,
+        httponly=True,
+        samesite="strict",
+        path=BASE + "/",
+    )
+    return response
 
 
 async def quota(db, key, maximum, seconds):
@@ -174,7 +188,18 @@ async def dispatch(path: str, request: Request):
         if request.method == "POST":
             existing = await read_session(request)
             if existing:
-                return output({"expires_at": int(field(existing, "expires")), "mode": "demo"})
+                token = request.cookies[COOKIE]
+                now = int(datetime.now(timezone.utc).timestamp())
+                renewed = await (
+                    db.prepare(
+                        "UPDATE sessions SET expires=MAX(expires,?) "
+                        "WHERE id=? AND expires>? RETURNING expires"
+                    )
+                    .bind(now + TTL, token, now)
+                    .first()
+                )
+                if renewed:
+                    return session_response(token, int(field(renewed, "expires")))
             ip = request.headers.get("cf-connecting-ip", "local")
             if not await quota(db, "create:" + ip, 20, 3600) or not await quota(
                 db, "global-create", 300, 3600
@@ -188,17 +213,7 @@ async def dispatch(path: str, request: Request):
                 .bind(token, json.dumps(seed(today), ensure_ascii=False), expires)
                 .run()
             )
-            response = output({"expires_at": expires, "mode": "demo"})
-            response.set_cookie(
-                COOKIE,
-                token,
-                max_age=TTL,
-                secure=True,
-                httponly=True,
-                samesite="strict",
-                path=BASE + "/",
-            )
-            return response
+            return session_response(token, expires)
         if request.method == "DELETE":
             token = request.cookies.get(COOKIE, "")
             if re.fullmatch(r"[a-f0-9]{64}", token):
