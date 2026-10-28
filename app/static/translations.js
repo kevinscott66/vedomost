@@ -27,7 +27,8 @@ window.VEDOMOST_TRANSLATIONS = {
     addPayment: "Добавить оплату",
     student: "Ученик",
     chooseStudent: "Выберите ученика",
-    amount: "Сумма",
+    currencyUnit: "сум",
+    amount: "Сумма, сум",
     amountPlaceholder: "Введите сумму",
     date: "Дата",
     save: "Сохранить",
@@ -47,7 +48,7 @@ window.VEDOMOST_TRANSLATIONS = {
     phone: "Телефон",
     group: "Группа",
     groupPlaceholder: "Например, Английский А2",
-    monthlyFee: "Оплата за месяц",
+    monthlyFee: "Оплата за месяц, сум",
     saveStudent: "Сохранить ученика",
     history: "История оплат",
     deleteStudent: "Удалить ученика?",
@@ -101,7 +102,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Коды ответов",
     apiRules: "Расчёты и ограничения",
     apiRuleText:
-      "Денежные значения передаются строками с двумя знаками после запятой. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
+      "В этой демоверсии используется узбекский сум (UZS). Смена языка не меняет валюту, конвертации нет. Денежные значения передаются строками с двумя знаками после запятой. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
     apiStudentsText:
       "POST /students — создать; GET /students — список; GET /students/{id} — получить; PUT /students/{id} — заменить все поля; DELETE /students/{id} — удалить ученика без оплат.",
     apiPaymentsText:
@@ -152,7 +153,8 @@ window.VEDOMOST_TRANSLATIONS = {
     addPayment: "Add payment",
     student: "Student",
     chooseStudent: "Select a student",
-    amount: "Amount",
+    currencyUnit: "UZS",
+    amount: "Amount, UZS",
     amountPlaceholder: "Enter amount",
     date: "Date",
     save: "Save",
@@ -172,7 +174,7 @@ window.VEDOMOST_TRANSLATIONS = {
     phone: "Phone",
     group: "Group",
     groupPlaceholder: "For example, English A2",
-    monthlyFee: "Monthly fee",
+    monthlyFee: "Monthly fee, UZS",
     saveStudent: "Save student",
     history: "Payment history",
     deleteStudent: "Delete student?",
@@ -226,7 +228,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Response codes",
     apiRules: "Calculation rules and limits",
     apiRuleText:
-      "Money is represented by decimal strings with two fractional digits. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
+      "This demo uses the Uzbek sum (UZS). Changing the language does not change currency; there is no conversion. Money is represented by decimal strings with two fractional digits. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
     apiStudentsText:
       "POST /students — create; GET /students — list; GET /students/{id} — retrieve; PUT /students/{id} — replace all fields; DELETE /students/{id} — delete a student without payments.",
     apiPaymentsText:
@@ -277,7 +279,8 @@ window.VEDOMOST_TRANSLATIONS = {
     addPayment: "To‘lov qo‘shish",
     student: "O‘quvchi",
     chooseStudent: "O‘quvchini tanlang",
-    amount: "Summa",
+    currencyUnit: "so‘m",
+    amount: "Summa, so‘m",
     amountPlaceholder: "Summani kiriting",
     date: "Sana",
     save: "Saqlash",
@@ -296,7 +299,7 @@ window.VEDOMOST_TRANSLATIONS = {
     phone: "Telefon",
     group: "Guruh",
     groupPlaceholder: "Masalan, Ingliz tili A2",
-    monthlyFee: "Oylik to‘lov",
+    monthlyFee: "Oylik to‘lov, so‘m",
     saveStudent: "O‘quvchini saqlash",
     history: "To‘lovlar tarixi",
     deleteStudent: "O‘quvchi o‘chirilsinmi?",
@@ -351,7 +354,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Javob kodlari",
     apiRules: "Hisoblash qoidalari va cheklovlar",
     apiRuleText:
-      "Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
+      "Bu demoda O‘zbekiston so‘mi (UZS) ishlatiladi. Tilni almashtirish valyutani o‘zgartirmaydi; konvertatsiya yo‘q. Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
     apiStudentsText:
       "POST /students — yaratish; GET /students — ro‘yxat; GET /students/{id} — olish; PUT /students/{id} — barcha maydonlarni almashtirish; DELETE /students/{id} — to‘lovlari yo‘q o‘quvchini o‘chirish.",
     apiPaymentsText:

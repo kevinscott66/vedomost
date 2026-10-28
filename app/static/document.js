@@ -79,14 +79,14 @@
         path === "/payments"
           ? {
               student_id: 1,
-              amount: "2500.00",
+              amount: "200000.00",
               date: localDay,
             }
           : {
               name: "Demo student",
               phone: "+7 000 000-00-00",
               group: "A2",
-              monthly_fee: "6500.00",
+              monthly_fee: "800000.00",
             },
         null,
         2,
@@ -171,9 +171,9 @@
           name: "Demo student",
           phone: "+7 000 000-00-00",
           group: "A2",
-          monthly_fee: "6500.00",
+          monthly_fee: "800000.00",
         },
-        { student_id: 1, amount: "2500.00", date: "2026-10-28" },
+        { student_id: 1, amount: "200000.00", date: "2026-10-28" },
       ];
       root.append(el("h2", t("example")));
       for (const sample of samples)

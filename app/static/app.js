@@ -9,7 +9,9 @@ const number = (value) =>
   new Intl.NumberFormat(window.i18n.locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(value) +
+  "\u00a0" +
+  t("currencyUnit");
 let students = [],
   deleteId = null,
   generation = 0;
@@ -153,6 +155,7 @@ function renderDebtors(report) {
   $("total").replaceChildren(
     document.createTextNode(whole),
     node("span", minor, "minor-amount"),
+    node("span", "\u00a0" + t("currencyUnit"), "currency-unit"),
   );
   $("debt-count").textContent = report.debtors.length;
   const count = report.debtors.length;

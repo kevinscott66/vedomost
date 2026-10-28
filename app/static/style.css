@@ -1304,3 +1304,37 @@ textarea:focus-visible {
 .api-console pre {
   min-height: 70px;
 }
+
+.currency-unit {
+  font-size: 0.28em;
+  letter-spacing: 0;
+  color: var(--muted);
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .debtor-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .debtor-person {
+    padding-right: 84px;
+  }
+  .pay-button {
+    grid-column: 2;
+    justify-self: end;
+    width: 72px;
+    min-width: 0;
+  }
+  .amount {
+    font-size: 16px;
+  }
+}
+@media (min-width: 951px) and (max-width: 1150px) {
+  .table-head,
+  .debtor-row {
+    grid-template-columns: minmax(130px, 1fr) 104px 104px 76px;
+    gap: 12px;
+  }
+  .amount {
+    font-size: 12px;
+  }
+}
