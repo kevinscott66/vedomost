@@ -73,6 +73,10 @@
       idField.hidden = !path.includes("{id}");
       monthField.hidden = path !== "/debtors";
       bodyField.hidden = !["POST", "PUT"].includes(method);
+      id.disabled = idField.hidden;
+      month.disabled = monthField.hidden;
+      id.setCustomValidity("");
+      month.setCustomValidity("");
       id.required = !idField.hidden;
       month.required = !monthField.hidden;
       body.value = JSON.stringify(
