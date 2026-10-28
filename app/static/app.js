@@ -108,9 +108,21 @@ function renderStudents() {
   }
 }
 function renderDebtors(report) {
-  $("total").textContent = number(report.total_debt);
-  $("debt-count").textContent =
-    `Учеников с задолженностью: ${report.debtors.length}`;
+  const [whole, fraction] = number(report.total_debt).split(",");
+  $("total").replaceChildren(
+    document.createTextNode(whole),
+    node("span", "," + fraction, "minor-amount"),
+  );
+  $("debt-count").textContent = report.debtors.length;
+  const count = report.debtors.length;
+  $("debt-count-label").textContent =
+    count % 10 === 1 && count % 100 !== 11
+      ? "ученик"
+      : count % 10 >= 2 &&
+          count % 10 <= 4 &&
+          !(count % 100 >= 12 && count % 100 <= 14)
+        ? "ученика"
+        : "учеников";
   const list = $("debt-list");
   list.replaceChildren();
   if (!students.length) {
@@ -127,18 +139,18 @@ function renderDebtors(report) {
     return;
   }
   const head = node("div", undefined, "table-head");
-  ["Ученик / группа", "Внесено", "Осталось", ""].forEach((t) =>
+  ["Ученик / Группа", "Оплачено", "Осталось", ""].forEach((t) =>
     head.append(node("span", t)),
   );
   list.append(head);
   for (const s of report.debtors) {
     const row = node("div", undefined, "debtor-row");
     const paid = node("div", number(s.paid), "amount");
-    paid.append(node("small", `из ${number(s.monthly_fee)}`));
+    paid.setAttribute("data-label", "Внесено");
     const debt = node("div", number(s.debt), "amount debt");
-    debt.append(node("small", "к оплате"));
+    debt.setAttribute("data-label", "Осталось");
     const pay = button(
-      "↗",
+      "Внести",
       () => {
         $("pay-student").value = s.id;
         $("pay-amount").value = s.debt;
@@ -148,7 +160,12 @@ function renderDebtors(report) {
       "pay-button",
     );
     pay.setAttribute("aria-label", `Внести оплату: ${s.name}`);
-    row.append(person(s), paid, debt, pay);
+    const identity = node("div", undefined, "debtor-person");
+    identity.append(
+      node("div", s.name, "debtor-name"),
+      node("div", s.group, "debtor-group"),
+    );
+    row.append(identity, paid, debt, pay);
     list.append(row);
   }
 }
@@ -174,7 +191,8 @@ async function refresh() {
     );
     $("global-error").hidden = false;
     $("total").textContent = "—";
-    $("debt-count").textContent = "Данные не загружены";
+    $("debt-count").textContent = "—";
+    $("debt-count-label").textContent = "Нет данных";
     $("debt-list").replaceChildren(
       empty(
         "Не удалось загрузить ведомость",
@@ -184,11 +202,32 @@ async function refresh() {
   }
 }
 $("month").addEventListener("change", refresh);
+function moveMonth(offset) {
+  const [year, month] = $("month").value.split("-").map(Number);
+  const index = year * 12 + month - 1 + offset;
+  const nextYear = Math.floor(index / 12),
+    nextMonth = (index % 12) + 1;
+  if (
+    nextYear < 1 ||
+    nextYear > 9999 ||
+    (nextYear === 9999 && nextMonth === 12)
+  )
+    return;
+  $("month").value =
+    `${String(nextYear).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}`;
+  refresh();
+}
+$("previous-month").onclick = () => moveMonth(-1);
+$("next-month").onclick = () => moveMonth(1);
 for (const [tab, other, view, otherView] of [
   ["debts-tab", "students-tab", "debts-view", "students-view"],
   ["students-tab", "debts-tab", "students-view", "debts-view"],
 ])
   $(tab).onclick = () => {
+    $("page-title").textContent = tab === "debts-tab" ? "Оплаты" : "Ученики";
+    document
+      .querySelector("main")
+      .classList.toggle("students-mode", tab === "students-tab");
     $(tab).setAttribute("aria-pressed", "true");
     $(other).setAttribute("aria-pressed", "false");
     $(view).hidden = false;
@@ -295,3 +334,25 @@ $("confirm-delete").onclick = async () => {
   }
 };
 refresh();
+
+function syncThemeButton() {
+  const light = document.documentElement.dataset.theme === "light";
+  $("theme-toggle").setAttribute(
+    "aria-label",
+    light ? "Включить тёмную тему" : "Включить светлую тему",
+  );
+  $("theme-label").textContent = light ? "Тёмная тема" : "Светлая тема";
+  $("theme-icon").src = light
+    ? "/static/icons/moon.svg"
+    : "/static/icons/sun.svg";
+}
+$("theme-toggle").onclick = () => {
+  const theme =
+    document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem("vedomost-theme", theme);
+  } catch {}
+  syncThemeButton();
+};
+syncThemeButton();

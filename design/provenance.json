@@ -1,0 +1,13 @@
+{
+  "provider": "Higgsfield",
+  "model": "GPT Image 2",
+  "job_type": "gpt_image_2",
+  "created_at": "2026-10-28T14:36:48.441839Z",
+  "resolution": "1k",
+  "quality": "medium",
+  "aspect_ratio": "3:2",
+  "quoted_credits": 1,
+  "selected_by_user": "02 — Тёмный, графит и мята",
+  "reference": "modern-dark.png",
+  "prompt": "higgsfield-modern-dark.txt"
+}

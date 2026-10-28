@@ -1,70 +1,84 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ведомость — оплаты учебного центра</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/theme.js"></script>
     <script src="/static/app.js" defer></script>
   </head>
   <body>
-    <header class="topbar">
+    <aside class="sidebar">
       <a class="brand" href="/" aria-label="Ведомость, главная"
-        ><span class="mark">в.</span> ведомость<span class="brand-note"
-          >УЧЕБНЫЙ ЦЕНТР</span
-        ></a
-      ><span class="edition"
-        >Учёт оплат <span class="dot"></span> Локальная версия</span
+        >ведомость<span class="brand-dot">.</span></a
       >
-    </header>
-    <main>
-      <div class="eyebrow">ФИНАНСЫ / УЧЕБНЫЙ ЦЕНТР</div>
-      <div class="title-row">
-        <div>
-          <h1>Всё по ведомости.</h1>
-          <p class="intro">Ученики, оплаты и задолженность — в одном месте.</p>
-        </div>
-        <button id="new-student" class="outline">＋ Добавить ученика</button>
-      </div>
       <nav class="tabs" aria-label="Разделы">
-        <button id="debts-tab" aria-pressed="true">Задолженность</button
+        <button id="debts-tab" aria-pressed="true">
+          <img
+            src="/static/icons/receipt-text.svg"
+            alt=""
+          />Задолженность</button
         ><button id="students-tab" aria-pressed="false">
-          Ученики <span id="student-count">0</span>
+          <img src="/static/icons/users.svg" alt="" />Ученики
+          <span id="student-count">0</span>
         </button>
       </nav>
+      <div class="sidebar-bottom">
+        <button id="new-student">
+          <img src="/static/icons/circle-plus.svg" alt="" />Добавить ученика</button
+        ><button id="theme-toggle" aria-label="Включить светлую тему">
+          <img id="theme-icon" src="/static/icons/sun.svg" alt="" /><span
+            id="theme-label"
+            >Светлая тема</span
+          >
+        </button>
+      </div>
+    </aside>
+    <main>
+      <header class="page-header">
+        <p class="context">Учебный центр</p>
+        <div class="heading-row">
+          <h1 id="page-title">Оплаты</h1>
+          <div class="period">
+            <button id="previous-month" aria-label="Предыдущий месяц">
+              <img src="/static/icons/chevron-left.svg" alt="" /></button
+            ><label class="month-label"
+              ><span class="sr-only">Расчётный месяц</span
+              ><input
+                id="month"
+                type="month"
+                required
+                min="0001-01"
+                max="9999-11" /></label
+            ><button id="next-month" aria-label="Следующий месяц">
+              <img src="/static/icons/chevron-right.svg" alt="" />
+            </button>
+          </div>
+        </div>
+      </header>
       <div id="global-error" role="alert" hidden></div>
       <section id="debts-view">
         <div class="summary">
-          <div>
-            <span class="eyebrow">К ОПЛАТЕ ЗА МЕСЯЦ</span>
-            <div id="total" class="total">—</div>
-            <p id="debt-count">Загружаем данные…</p>
+          <div id="total" class="total" aria-label="Общая задолженность">—</div>
+          <div class="summary-caption">
+            <span>Задолженность</span><span aria-hidden="true">·</span
+            ><span
+              ><span id="debt-count">—</span>
+              <span id="debt-count-label">учеников</span></span
+            >
           </div>
-          <label class="month-label"
-            >Расчётный месяц<input
-              id="month"
-              type="month"
-              required
-              min="0001-01"
-              max="9999-11"
-          /></label>
         </div>
         <div class="workspace">
-          <section class="ledger">
-            <div class="section-head">
-              <h2>Кто ещё не оплатил</h2>
-              <span class="small">По убыванию долга</span>
-            </div>
+          <section class="ledger" aria-label="Список должников">
             <div id="debt-list" aria-live="polite"></div>
             <p class="footnote">
-              Учитываются оплаты выбранного календарного месяца. Переплата на
-              другие месяцы не переносится.
+              Учёт за календарный месяц. Переплата на другие месяцы не
+              переносится.
             </p>
           </section>
           <aside class="payment-panel">
-            <span class="eyebrow">НОВАЯ ЗАПИСЬ</span>
-            <h2>Внести оплату</h2>
-            <p class="muted">Зафиксируйте уже полученную сумму.</p>
+            <h2>Добавить оплату</h2>
             <form id="payment-form">
               <label
                 >Ученик<select id="pay-student" required>
@@ -78,19 +92,16 @@
                   min="0.01"
                   max="9999999999.99"
                   step="0.01"
-                  placeholder="0,00"
+                  placeholder="Введите сумму"
                   required /></label
-              ><label
-                >Дата оплаты<input id="pay-date" type="date" required
-              /></label>
+              ><label>Дата<input id="pay-date" type="date" required /></label>
               <p id="payment-message" role="status" class="form-message"></p>
-              <button class="primary" id="save-payment">
-                Сохранить оплату <span aria-hidden="true">↗</span>
-              </button>
+              <button id="save-payment" class="primary">Сохранить</button>
             </form>
-            <div class="panel-note">
-              Это журнал учёта. Деньги через приложение не переводятся.
-            </div>
+            <p class="panel-note">
+              Запись полученной оплаты.<br />Деньги через приложение не
+              переводятся.
+            </p>
           </aside>
         </div>
       </section>
@@ -102,9 +113,8 @@
         <div id="students-list"></div>
       </section>
       <footer>
-        <span>Ведомость / 2026</span
-        ><span>© Александр Павлович · Ознакомительная версия</span
-        ><a href="/docs">Документация API ↗</a>
+        <span>© Александр Павлович · 2026</span
+        ><a href="/docs">Документация API</a>
       </footer>
     </main>
     <dialog id="student-dialog">
