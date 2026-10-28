@@ -4,18 +4,34 @@
   const nativeFetch = window.fetch.bind(window);
   const sessionUrl = `${base}/session`;
 
-  // Start the visitor session before the application can issue any API request.
-  const sessionReady = nativeFetch(sessionUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "{}",
-    credentials: "same-origin",
-  }).then((response) => {
-    if (!response.ok) throw new Error("The demo session could not be started.");
-    return response.json();
-  });
-
-  sessionReady.catch(() => {});
+  // Share each in-flight session request; clear failures so a later app retry can try again.
+  let sessionReady = null;
+  function ensureSession() {
+    if (!sessionReady) {
+      let tracked;
+      tracked = Promise.resolve()
+        .then(() =>
+          nativeFetch(sessionUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+            credentials: "same-origin",
+          }),
+        )
+        .then((response) => {
+          if (!response.ok)
+            throw new Error("The demo session could not be started.");
+          return response.json();
+        })
+        .catch((error) => {
+          if (sessionReady === tracked) sessionReady = null;
+          throw error;
+        });
+      sessionReady = tracked;
+      tracked.catch(() => {});
+    }
+    return sessionReady;
+  }
 
   function isAppRequest(input) {
     const raw = typeof input === "string" ? input : input?.url;
@@ -31,7 +47,7 @@
 
   window.fetch = async (input, init) => {
     if (!isAppRequest(input)) return nativeFetch(input, init);
-    await sessionReady;
+    await ensureSession();
     const raw = typeof input === "string" ? input : input.url;
     const url = new URL(raw, window.location.href);
     const prefixed = `${base}${url.pathname}${url.search}${url.hash}`;
@@ -60,7 +76,7 @@
     document.addEventListener("DOMContentLoaded", addNotice, { once: true });
   else addNotice();
 
-  sessionReady.catch((error) => {
+  ensureSession().catch((error) => {
     const showError = () => {
       const target = document.getElementById("global-error");
       if (!target) return;
