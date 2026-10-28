@@ -9,3 +9,14 @@ data/
 CURRENT_STATE.md
 review/
 design/rejected/
+
+# Cloudflare local build/runtime data
+cloud/.venv/
+cloud/.wrangler/
+cloud/public/
+cloud/.dev.vars
+cloud/fx_source.py
+.wrangler/
+cloud/.venv-workers/
+cloud/python_modules/
+cloud/src/

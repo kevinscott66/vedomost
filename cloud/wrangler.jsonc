@@ -1,0 +1,13 @@
+{
+  "name": "vedomost-demo",
+  "main": "src/worker.py",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["python_workers"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [{"pattern": "dobropalm.tech/demos/vedomost*", "zone_name": "dobropalm.tech"}],
+  "assets": {"directory": "./public", "binding": "ASSETS", "run_worker_first": true},
+  "vars": {"BASE_PATH": "/demos/vedomost"},
+  "d1_databases": [{"binding": "DB", "database_name": "vedomost-demo", "database_id": "6a6e552d-c78a-48b0-b7f6-d800de8f49c8"}],
+  "triggers": {"crons": ["17 * * * *"]}
+}
