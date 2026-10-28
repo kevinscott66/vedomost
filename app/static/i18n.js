@@ -149,8 +149,10 @@
     },
     true,
   );
-  document.addEventListener("input", (e) => {
+  const clearValidity = (e) => {
     if (e.target.setCustomValidity) e.target.setCustomValidity("");
-  });
+  };
+  document.addEventListener("input", clearValidity);
+  document.addEventListener("change", clearValidity);
   apply();
 })();

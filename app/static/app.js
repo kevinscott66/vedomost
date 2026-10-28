@@ -17,6 +17,10 @@ let students = [],
   generation = 0;
 let paymentPending = false;
 let studentPending = false;
+let deletePending = false;
+let studentDialogRevision = 0;
+let deleteDialogRevision = 0;
+let reportStatus = "loading";
 let paymentAttempt = null;
 let historyGeneration = 0;
 let paymentContextMonth = null;
@@ -89,6 +93,26 @@ function message(id, text, error = false) {
   else delete $(id).dataset.statusKey;
   $(id).classList.toggle("error", error);
 }
+function clearValidation(form) {
+  form.querySelectorAll("input, select").forEach((control) => {
+    control.setCustomValidity("");
+  });
+}
+function syncPaymentActions() {
+  document.querySelectorAll(".pay-button").forEach((control) => {
+    control.disabled = paymentPending;
+  });
+}
+function renderReportStatus() {
+  $("total").textContent = "—";
+  $("debt-count").textContent = "—";
+  $("debt-count-label").textContent = t("noData");
+  $("debt-list").replaceChildren(
+    reportStatus === "loading"
+      ? node("div", t("loading"), "empty")
+      : empty(t("loadError"), t("loadErrorText")),
+  );
+}
 function empty(title, text) {
   const e = node("div", undefined, "empty");
   e.append(node("strong", title), node("span", text));
@@ -143,6 +167,7 @@ function renderStudents() {
       button(
         t("delete"),
         () => {
+          ++deleteDialogRevision;
           deleteId = s.id;
           $("delete-description").textContent = s.name;
           message("delete-message", "");
@@ -215,6 +240,8 @@ function renderDebtors(report) {
     const pay = button(
       t("pay"),
       () => {
+        if (paymentPending) return;
+        clearValidation($("payment-form"));
         $("pay-student").value = s.id;
         $("pay-amount").value = s.debt;
         paymentContextMonth = report.month;
@@ -230,6 +257,7 @@ function renderDebtors(report) {
       },
       "pay-button",
     );
+    pay.disabled = paymentPending;
     pay.setAttribute("aria-label", t("payFor", { name: s.name }));
     const identity = node("div", undefined, "debtor-person");
     identity.append(
@@ -249,8 +277,11 @@ async function refresh() {
   }
   const ticket = ++generation;
   const month = $("month").value;
-  if (!month) return;
+  lastReport = null;
+  reportStatus = month ? "loading" : "error";
+  renderReportStatus();
   $("global-error").hidden = true;
+  if (!month) return;
   try {
     const [all, report] = await Promise.all([
       request("/students"),
@@ -260,24 +291,23 @@ async function refresh() {
     students = all;
     renderStudents();
     lastReport = report;
+    reportStatus = "ready";
     renderDebtors(report);
   } catch (e) {
     if (ticket !== generation) return;
     lastReport = null;
+    reportStatus = "error";
     $("global-error").replaceChildren(
       node("span", e.message + " "),
       button(t("retry"), refresh),
     );
     $("global-error").hidden = false;
-    $("total").textContent = "—";
-    $("debt-count").textContent = "—";
-    $("debt-count-label").textContent = t("noData");
-    $("debt-list").replaceChildren(empty(t("loadError"), t("loadErrorText")));
+    renderReportStatus();
   }
 }
 function monthLabel() {
   const value = $("month").value;
-  if (value) $("month-display").textContent = window.i18n.formatMonth(value);
+  $("month-display").textContent = value ? window.i18n.formatMonth(value) : "—";
 }
 $("month").addEventListener("change", refresh);
 function moveMonth(offset) {
@@ -308,7 +338,14 @@ for (const [tab, other, view, otherView] of [
     $(otherView).hidden = true;
   };
 function editStudent(s = null) {
+  ++studentDialogRevision;
   $("student-form").reset();
+  clearValidation($("student-form"));
+  $("student-form")
+    .querySelectorAll("input, select")
+    .forEach((control) => {
+      control.disabled = false;
+    });
   $("student-id").value = s?.id ?? "";
   $("student-title").textContent = s ? t("editStudent") : t("newStudent");
   for (const [field, key] of [
@@ -330,6 +367,9 @@ $("student-form").onsubmit = async (event) => {
   event.preventDefault();
   if (studentPending) return;
   studentPending = true;
+  const revision = studentDialogRevision;
+  const controls = [...event.currentTarget.querySelectorAll("input, select")];
+  controls.forEach((control) => (control.disabled = true));
   const id = $("student-id").value;
   const payload = {
     name: $("student-name").value,
@@ -345,18 +385,22 @@ $("student-form").onsubmit = async (event) => {
       method: id ? "PUT" : "POST",
       body: JSON.stringify(payload),
     });
-    $("student-dialog").close();
+    if (revision === studentDialogRevision && $("student-dialog").open)
+      $("student-dialog").close();
     await refresh();
   } catch (e) {
-    message("student-message", e.message, true);
+    if (revision === studentDialogRevision && $("student-dialog").open)
+      message("student-message", e.message, true);
   } finally {
     studentPending = false;
+    controls.forEach((control) => (control.disabled = false));
     $("save-student").disabled = false;
   }
 };
 function paymentDateBounds() {
   const student = students.find((s) => String(s.id) === $("pay-student").value);
   const date = $("pay-date");
+  date.setCustomValidity("");
   date.min = student ? student.start_month + "-01" : "0001-01-01";
   date.max = "9999-12-31";
   if (paymentContextMonth) {
@@ -387,6 +431,7 @@ $("payment-form").onsubmit = async (event) => {
     return;
   }
   paymentPending = true;
+  syncPaymentActions();
   const controls = [...event.currentTarget.querySelectorAll("input, select")];
   controls.forEach((control) => (control.disabled = true));
   $("save-payment").disabled = true;
@@ -413,6 +458,7 @@ $("payment-form").onsubmit = async (event) => {
     message("payment-message", e.message, true);
   } finally {
     paymentPending = false;
+    syncPaymentActions();
     controls.forEach((control) => (control.disabled = false));
     $("save-payment").disabled = !students.length;
   }
@@ -448,14 +494,21 @@ async function history(s) {
   }
 }
 $("confirm-delete").onclick = async () => {
+  if (deletePending) return;
+  deletePending = true;
+  const revision = deleteDialogRevision;
+  const targetId = deleteId;
   $("confirm-delete").disabled = true;
   try {
-    await request("/students/" + deleteId, { method: "DELETE" });
-    $("delete-dialog").close();
+    await request("/students/" + targetId, { method: "DELETE" });
+    if (revision === deleteDialogRevision && $("delete-dialog").open)
+      $("delete-dialog").close();
     await refresh();
   } catch (e) {
-    message("delete-message", e.message, true);
+    if (revision === deleteDialogRevision && $("delete-dialog").open)
+      message("delete-message", e.message, true);
   } finally {
+    deletePending = false;
     $("confirm-delete").disabled = false;
   }
 };
@@ -464,6 +517,7 @@ refresh();
 function refreshDisplay() {
   renderStudents();
   if (lastReport) renderDebtors(lastReport);
+  else renderReportStatus();
   monthLabel();
   $("page-title").textContent = t(
     $("students-view").hidden ? "payments" : "students",
