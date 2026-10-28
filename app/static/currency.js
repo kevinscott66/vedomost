@@ -68,7 +68,9 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return "";
     const [year, month, day] = value.split("-").map(Number);
     return new Intl.DateTimeFormat(window.i18n.locale, {
-      dateStyle: "medium",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       timeZone: "UTC",
     }).format(new Date(Date.UTC(year, month - 1, day, 12)));
   };
@@ -110,7 +112,7 @@
       summary.textContent = loading
         ? labels.loading
         : status === "fresh"
-          ? `${quote} · ${dated}`
+          ? selected === "UZS" ? `${quote} ${dated}` : `${quote} · ${dated}`
           : `${quote} · ${labels[status]}`;
     }
     note.textContent = window.i18n.t("currencyNote", {

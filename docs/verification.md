@@ -105,3 +105,7 @@ Final checks for this patch:61pytest and29Node tests pass; Ruff lint/format, JS 
 ## User-facing copy cleanup — 28 October 2026
 
 Removed the redundant payment-recording disclaimer and API documentation link from the main screen. Exchange-rate metadata is collapsed under an accessible details control; freshness remains visible in its summary. Shortened enrollment and retry messages in RU/UZ/EN. Legal pages and developer documentation remain available at their existing routes.29Node tests pass; browser verified expansion/collapse and retained amounts without writes. Screenshot: [clean-interface.png](clean-interface.png).
+
+## Inline exchange-rate display
+
+The rate control is a quiet text disclosure below the balance caption. Foreign display currencies show the quote and effective date; UZS shows the rate date. Stale/fallback warnings remain visible. Numeric dates avoid missing Uzbek month names in browser Intl data. Public browser checks covered Russian/Uzbek date rendering, USD conversion and the native disclosure. 29 JavaScript tests pass. Screenshot: [inline rate](inline-rate.png). No ledger data changed.
