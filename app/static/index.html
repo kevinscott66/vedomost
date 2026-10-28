@@ -10,7 +10,6 @@
     <script src="/static/i18n.js" defer></script>
     <script src="/static/currency.js" defer></script>
     <script src="/static/app.js" defer></script>
-    <script src="/static/payment-demo.js" defer></script>
   </head>
   <body>
     <aside class="sidebar">
@@ -169,30 +168,6 @@
             <p class="panel-note" data-i18n="paymentNote"></p>
           </aside>
         </div>
-        <section class="payment-gateways" aria-labelledby="gateways-title">
-          <div class="gateways-heading">
-            <h2 id="gateways-title" data-i18n="gatewaysTitle"></h2>
-            <span class="demo-badge" data-i18n="demoBadge"></span>
-          </div>
-          <p data-i18n="gatewaysNote"></p>
-          <div class="gateway-options">
-            <button class="gateway-option" type="button" data-gateway="RUB">
-              <strong>₽ <span>RUB</span></strong
-              ><span data-i18n="gatewayRub"></span
-              ><span class="gateway-action" data-i18n="gatewayOpen"></span>
-            </button>
-            <button class="gateway-option" type="button" data-gateway="USD">
-              <strong>$ <span>USD</span></strong
-              ><span data-i18n="gatewayUsd"></span
-              ><span class="gateway-action" data-i18n="gatewayOpen"></span>
-            </button>
-            <button class="gateway-option" type="button" data-gateway="UZS">
-              <strong>so‘m <span>UZS</span></strong
-              ><span data-i18n="gatewayUzs"></span
-              ><span class="gateway-action" data-i18n="gatewayOpen"></span>
-            </button>
-          </div>
-        </section>
       </section>
       <section id="students-view" hidden>
         <div class="section-head">
@@ -284,29 +259,6 @@
         </button>
       </div>
       <div id="history-list"></div>
-    </dialog>
-    <dialog id="gateway-dialog" aria-labelledby="gateway-dialog-title">
-      <div class="dialog-head">
-        <h2 id="gateway-dialog-title"></h2>
-        <button
-          type="button"
-          class="icon"
-          id="close-gateway"
-          data-i18n-aria="close"
-        >
-          ×
-        </button>
-      </div>
-      <span class="demo-badge" data-i18n="demoBadge"></span>
-      <p class="gateway-description" id="gateway-description"></p>
-      <p class="muted" data-i18n="gatewayDisclaimer"></p>
-      <button
-        type="button"
-        class="primary"
-        id="gateway-test"
-        data-i18n="gatewayTest"
-      ></button>
-      <p id="gateway-status" class="form-message" role="status"></p>
     </dialog>
     <dialog id="delete-dialog">
       <h2><span data-i18n="deleteStudent">Удалить ученика?</span></h2>
