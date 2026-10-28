@@ -1,0 +1,25 @@
+Copyright (c) 2026 Александр Павлович (Alexander Pavlovich).
+All rights reserved.
+
+EVALUATION-ONLY SOURCE LICENSE
+
+Permission is granted to view this source code and to download and run it locally
+solely for personal inspection, portfolio review, and evaluation of the associated
+candidate exercise. You may make local modifications solely for that evaluation.
+
+Commercial use, use in a real operational service, redistribution of the code or
+modified versions, sublicensing, resale, and transfer to third parties are not
+permitted without the copyright holder's prior written permission. Rights expressly
+granted by the hosting platform's terms remain unaffected.
+
+This is source-available software, not an open-source license. Public availability
+of the repository does not grant permission to deploy or commercially reuse it.
+
+Third-party dependencies retain their respective licenses. No exclusive rights are
+claimed in the exercise's general idea, factual requirements, or third-party work.
+AI assistance used in this implementation is disclosed in docs/ai-worklog.md.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE AUTHORS ARE NOT LIABLE FOR CLAIMS OR
+DAMAGES ARISING FROM THE SOFTWARE OR ITS USE.

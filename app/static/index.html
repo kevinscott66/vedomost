@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ведомость — оплаты учебного центра</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Ведомость, главная"
+        ><span class="mark">в.</span> ведомость<span class="brand-note"
+          >УЧЕБНЫЙ ЦЕНТР</span
+        ></a
+      ><span class="edition"
+        >Учёт оплат <span class="dot"></span> Локальная версия</span
+      >
+    </header>
+    <main>
+      <div class="eyebrow">ФИНАНСЫ / УЧЕБНЫЙ ЦЕНТР</div>
+      <div class="title-row">
+        <div>
+          <h1>Всё по ведомости.</h1>
+          <p class="intro">Ученики, оплаты и задолженность — в одном месте.</p>
+        </div>
+        <button id="new-student" class="outline">＋ Добавить ученика</button>
+      </div>
+      <nav class="tabs" aria-label="Разделы">
+        <button id="debts-tab" aria-pressed="true">Задолженность</button
+        ><button id="students-tab" aria-pressed="false">
+          Ученики <span id="student-count">0</span>
+        </button>
+      </nav>
+      <div id="global-error" role="alert" hidden></div>
+      <section id="debts-view">
+        <div class="summary">
+          <div>
+            <span class="eyebrow">К ОПЛАТЕ ЗА МЕСЯЦ</span>
+            <div id="total" class="total">—</div>
+            <p id="debt-count">Загружаем данные…</p>
+          </div>
+          <label class="month-label"
+            >Расчётный месяц<input
+              id="month"
+              type="month"
+              required
+              min="0001-01"
+              max="9999-11"
+          /></label>
+        </div>
+        <div class="workspace">
+          <section class="ledger">
+            <div class="section-head">
+              <h2>Кто ещё не оплатил</h2>
+              <span class="small">По убыванию долга</span>
+            </div>
+            <div id="debt-list" aria-live="polite"></div>
+            <p class="footnote">
+              Учитываются оплаты выбранного календарного месяца. Переплата на
+              другие месяцы не переносится.
+            </p>
+          </section>
+          <aside class="payment-panel">
+            <span class="eyebrow">НОВАЯ ЗАПИСЬ</span>
+            <h2>Внести оплату</h2>
+            <p class="muted">Зафиксируйте уже полученную сумму.</p>
+            <form id="payment-form">
+              <label
+                >Ученик<select id="pay-student" required>
+                  <option value="">Выберите ученика</option>
+                </select></label
+              ><label
+                >Сумма<input
+                  id="pay-amount"
+                  type="number"
+                  inputmode="decimal"
+                  min="0.01"
+                  max="9999999999.99"
+                  step="0.01"
+                  placeholder="0,00"
+                  required /></label
+              ><label
+                >Дата оплаты<input id="pay-date" type="date" required
+              /></label>
+              <p id="payment-message" role="status" class="form-message"></p>
+              <button class="primary" id="save-payment">
+                Сохранить оплату <span aria-hidden="true">↗</span>
+              </button>
+            </form>
+            <div class="panel-note">
+              Это журнал учёта. Деньги через приложение не переводятся.
+            </div>
+          </aside>
+        </div>
+      </section>
+      <section id="students-view" hidden>
+        <div class="section-head">
+          <h2>Ученики центра</h2>
+          <span class="small">Текущий месячный тариф</span>
+        </div>
+        <div id="students-list"></div>
+      </section>
+      <footer>
+        <span>Ведомость / 2026</span
+        ><span>© Александр Павлович · Ознакомительная версия</span
+        ><a href="/docs">Документация API ↗</a>
+      </footer>
+    </main>
+    <dialog id="student-dialog">
+      <form id="student-form">
+        <div class="dialog-head">
+          <h2 id="student-title">Новый ученик</h2>
+          <button
+            type="button"
+            class="icon"
+            id="close-student"
+            aria-label="Закрыть"
+          >
+            ×
+          </button>
+        </div>
+        <input id="student-id" type="hidden" /><label
+          >Имя<input
+            id="student-name"
+            required
+            maxlength="160"
+            autocomplete="name" /></label
+        ><label
+          >Телефон<input
+            id="student-phone"
+            type="tel"
+            required
+            minlength="3"
+            maxlength="40"
+            autocomplete="tel" /></label
+        ><label
+          >Группа<input
+            id="student-group"
+            required
+            maxlength="160"
+            placeholder="Например, Английский А2" /></label
+        ><label
+          >Оплата за месяц<input
+            id="student-fee"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            max="9999999999.99"
+            step="0.01"
+            required
+        /></label>
+        <p id="student-message" role="status" class="form-message"></p>
+        <button id="save-student" class="primary">Сохранить ученика</button>
+      </form>
+    </dialog>
+    <dialog id="history-dialog">
+      <div class="dialog-head">
+        <h2 id="history-title">История оплат</h2>
+        <button class="icon" id="close-history" aria-label="Закрыть историю">
+          ×
+        </button>
+      </div>
+      <div id="history-list"></div>
+    </dialog>
+    <dialog id="delete-dialog">
+      <h2>Удалить ученика?</h2>
+      <p id="delete-description"></p>
+      <p class="muted">
+        Ученика с оплатами удалить нельзя: история сохраняется.
+      </p>
+      <p id="delete-message" role="status"></p>
+      <div class="dialog-actions">
+        <button id="cancel-delete" class="outline">Отмена</button
+        ><button id="confirm-delete" class="danger">Удалить</button>
+      </div>
+    </dialog>
+  </body>
+</html>
