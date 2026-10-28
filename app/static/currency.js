@@ -101,6 +101,8 @@
       selected === "UZS"
         ? ""
         : `1 ${selected} = ${new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 2 }).format(rates[selected])} UZS.`;
+    const summary = document.getElementById("currency-summary");
+    if (summary) summary.textContent = `${window.i18n.t("exchangeDetails")} · ${labels[loading ? "loading" : status]}`;
     note.textContent = window.i18n.t("currencyNote", {
       rate,
       source: names[source],

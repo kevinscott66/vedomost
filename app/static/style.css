@@ -1397,3 +1397,6 @@ textarea:focus-visible {
   transform: translateY(-75%) rotate(45deg);
   pointer-events: none;
 }
+
+.currency-note summary { cursor: pointer; font-size: 12px; }
+.currency-note p { margin: 8px 0 0; }

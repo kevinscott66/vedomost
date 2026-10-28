@@ -101,3 +101,7 @@ The Standard security scan was pinned to d5bf618 and retained a low conditional 
 Browser check on the main local page: changing display currency retained the exact123.45USD draft; it was cleared without submission. Main database still has5payments totaling141000100minorUZS units, integrity_check ok and no foreign-key violations. No schema migration or monetary data rewrite was needed in this iteration.
 
 Final checks for this patch:61pytest and29Node tests pass; Ruff lint/format, JS syntax, diff check and staged secret scan pass. Live localhost GET/debtors returned200 with unchanged1340000.00UZS debt after restart. Screenshot: [review-v7.png](review-v7.png). The local-only/no-auth deployment limitation remains; no claim of production readiness or absence of all vulnerabilities is made.
+
+## User-facing copy cleanup — 28 October 2026
+
+Removed the redundant payment-recording disclaimer and API documentation link from the main screen. Exchange-rate metadata is collapsed under an accessible details control; freshness remains visible in its summary. Shortened enrollment and retry messages in RU/UZ/EN. Legal pages and developer documentation remain available at their existing routes.29Node tests pass; browser verified expansion/collapse and retained amounts without writes. Screenshot: [clean-interface.png](clean-interface.png).

@@ -1,14 +1,15 @@
 window.VEDOMOST_TRANSLATIONS = {
   ru: {
+    exchangeDetails: "Курс валют",
     paymentRateUnavailable: "Нет свежего официального курса. Оплата не записана. Повторите позже или укажите фактически полученную сумму в UZS.",
     paymentAmountLimit: "Эквивалент оплаты в UZS выходит за допустимый диапазон.",
     paymentTotalLimit: "Общая сумма оплат ученика за этот месяц превышает допустимый диапазон. Оплата не записана.",
-    paymentRetryConflict: "Этот ключ запроса уже использован для другой оплаты. Обновите страницу и проверьте историю перед повтором.",
+    paymentRetryConflict: "Не удалось сохранить изменённую оплату. Обновите страницу и проверьте историю перед повтором.",
     checkPaymentFields: "Проверьте значения полей запроса.",
 
     startMonth: "Начало обучения",
     startMonthNote:
-      "До этого месяца тариф не начисляется. Для старых оплат укажите реальный месяц начала.",
+      "С этого месяца начисляется оплата за обучение.",
     enrolledFrom: "Начало: {month}",
     paymentBeforeStart:
       "Дата оплаты раньше начала обучения. Проверьте дату или месяц начала у ученика.",
@@ -48,7 +49,7 @@ window.VEDOMOST_TRANSLATIONS = {
     chooseStudent: "Выберите ученика",
     displayCurrency: "Валюта отображения",
     currencyNote:
-      "Тарифы и долг учитываются в UZS. Здесь меняется только отображение сумм. {rate} Источник: {source}; дата курса: {rateDate}; статус: {freshness}. Последнее получение: {fetchedAt}.",
+      "{rate} На {rateDate}. {source}. {freshness}. Обновлено: {fetchedAt}.",
     currencySourceCBU: "Центральный банк Узбекистана",
     currencySourceCBR: "Банк России (кросс-курс)",
     currencySourceReference: "справочный резервный курс",
@@ -158,15 +159,16 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Укажите положительный целый ID ученика.",
   },
   en: {
+    exchangeDetails: "Exchange rate",
     paymentRateUnavailable: "A fresh official rate is unavailable. The payment was not recorded. Retry later or enter the amount actually received in UZS.",
     paymentAmountLimit: "The UZS payment equivalent is outside the supported range.",
     paymentTotalLimit: "This student’s monthly payment total exceeds the supported range. The payment was not recorded.",
-    paymentRetryConflict: "This request key belongs to another payment. Reload and check the history before retrying.",
+    paymentRetryConflict: "The changed payment could not be saved. Reload and check the history before retrying.",
     checkPaymentFields: "Check the request field values.",
 
     startMonth: "Enrollment month",
     startMonthNote:
-      "No fees are charged before this month. For historical payments, set the actual enrollment month.",
+      "Tuition charges start in this month.",
     enrolledFrom: "Enrolled: {month}",
     paymentBeforeStart:
       "Payment predates enrollment. Check the date or the student’s enrollment month.",
@@ -205,7 +207,7 @@ window.VEDOMOST_TRANSLATIONS = {
     chooseStudent: "Select a student",
     displayCurrency: "Display currency",
     currencyNote:
-      "Fees and debt are accounted in UZS. This selector changes how amounts are displayed. {rate} Source: {source}; rate date: {rateDate}; status: {freshness}. Last fetched: {fetchedAt}.",
+      "{rate} As of {rateDate}. {source}. {freshness}. Updated: {fetchedAt}.",
     currencySourceCBU: "Central Bank of Uzbekistan",
     currencySourceCBR: "Bank of Russia (cross-rate)",
     currencySourceReference: "reference fallback rate",
@@ -315,15 +317,16 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Enter a positive integer student ID.",
   },
   uz: {
+    exchangeDetails: "Valyuta kursi",
     paymentRateUnavailable: "Yangi rasmiy kurs mavjud emas. To‘lov saqlanmadi. Keyinroq qayta urinib ko‘ring yoki amalda olingan UZS summasini kiriting.",
     paymentAmountLimit: "To‘lovning UZS ekvivalenti ruxsat etilgan oraliqdan tashqarida.",
     paymentTotalLimit: "Ushbu o‘quvchining oylik to‘lovlar jami ruxsat etilgan chegaradan oshdi. To‘lov saqlanmadi.",
-    paymentRetryConflict: "Bu so‘rov kaliti boshqa to‘lov uchun ishlatilgan. Sahifani yangilang va qayta urinishdan oldin tarixni tekshiring.",
+    paymentRetryConflict: "O‘zgartirilgan to‘lov saqlanmadi. Sahifani yangilang va qayta urinishdan oldin tarixni tekshiring.",
     checkPaymentFields: "So‘rov maydonlaridagi qiymatlarni tekshiring.",
 
     startMonth: "O‘qish boshlangan oy",
     startMonthNote:
-      "Bu oydan oldin to‘lov hisoblanmaydi. Eski to‘lovlar uchun haqiqiy boshlanish oyini belgilang.",
+      "O‘qish uchun to‘lov shu oydan hisoblanadi.",
     enrolledFrom: "Boshlanish: {month}",
     paymentBeforeStart:
       "To‘lov o‘qish boshlanishidan oldin. Sana yoki o‘quvchining boshlanish oyini tekshiring.",
@@ -363,7 +366,7 @@ window.VEDOMOST_TRANSLATIONS = {
     chooseStudent: "O‘quvchini tanlang",
     displayCurrency: "Ko‘rsatish valyutasi",
     currencyNote:
-      "Tarif va qarz UZSda hisoblanadi. Bu tanlov faqat summalar ko‘rinishini o‘zgartiradi. {rate} Manba: {source}; kurs sanasi: {rateDate}; holat: {freshness}. Oxirgi yuklash: {fetchedAt}.",
+      "{rate} {rateDate} holatiga. {source}. {freshness}. Yangilangan: {fetchedAt}.",
     currencySourceCBU: "O‘zbekiston Markaziy banki",
     currencySourceCBR: "Rossiya banki (kross-kurs)",
     currencySourceReference: "ma’lumot uchun zaxira kursi",
