@@ -9,7 +9,11 @@ from app.main import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(tmp_path / "ledger.sqlite3"), base_url="http://127.0.0.1") as c:
+    with TestClient(
+        create_app(tmp_path / "ledger.sqlite3"),
+        client=("127.0.0.1", 50000),
+        base_url="http://127.0.0.1",
+    ) as c:
         yield c
 
 
@@ -96,12 +100,46 @@ def test_foreign_payment_books_rounded_uzs_and_original_currency(client, monkeyp
     assert payment["amount"] == "1.01"
     assert payment["currency"] == "RUB"
     assert payment["base_amount"] == "151.63"  # 151.62625 rounds half up to cents
-    assert payment["exchange_rate"] == 150.125
+    assert payment["exchange_rate"] == "150.125"
     assert payment["rate_date"] == "2026-10-27"
     assert payment["rate_source"] == "CBU"
     assert report(client)["total_debt"] == "48.37"
     history = client.get(f"/students/{s['id']}/payments").json()
     assert history == [payment]
+
+
+def test_cbr_exact_booking_rate_prevents_float_induced_cent_drift(client, monkeypatch):
+    from app.exchange_rates import normalize_cbr
+
+    payload = (
+        b'<ValCurs Date="28.10.2026">'
+        b"<Valute><CharCode>USD</CharCode><Nominal>1</Nominal><Value>80.5307</Value></Valute>"
+        b"<Valute><CharCode>UZS</CharCode><Nominal>10000</Nominal><Value>67.8899</Value></Valute>"
+        b"</ValCurs>"
+    )
+    exact_rates, _ = normalize_cbr(payload, date(2026, 10, 28))
+    snapshot = {
+        "status": "fresh",
+        "source": "CBR",
+        "rate_date": "2026-10-28",
+        "rates": {"UZS": 1.0, **{k: float(v) for k, v in exact_rates.items()}},
+        "booking_rates": {"UZS": "1", **{k: format(v, "f") for k, v in exact_rates.items()}},
+    }
+    monkeypatch.setattr("app.main.ExchangeRateService.get", lambda _self: snapshot)
+    s = student(client, "0", start_month="2026-10")
+    response = client.post(
+        "/payments",
+        json={
+            "student_id": s["id"],
+            "amount": "7548371392.39",
+            "currency": "USD",
+            "date": "2026-10-28",
+        },
+    )
+    assert response.status_code == 201, response.text
+    payment = response.json()
+    assert payment["base_amount"] == "89538448589428.08"
+    assert payment["exchange_rate"] == format(exact_rates["USD"], "f")
 
 
 def test_foreign_payment_replay_precedes_rate_refresh_and_rate_changes(client, monkeypatch):
@@ -226,10 +264,14 @@ def test_total_sort_and_current_tariff(client):
 
 def test_persistence_after_restart(tmp_path):
     path = tmp_path / "db.sqlite3"
-    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+    with TestClient(
+        create_app(path), client=("127.0.0.1", 50000), base_url="http://127.0.0.1"
+    ) as c:
         s = student(c)
         pay(c, s["id"], "25")
-    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+    with TestClient(
+        create_app(path), client=("127.0.0.1", 50000), base_url="http://127.0.0.1"
+    ) as c:
         assert len(c.get("/students").json()) == 1
         assert report(c)["total_debt"] == "975.00"
 
@@ -249,7 +291,9 @@ def test_demo_does_not_duplicate_or_overwrite(tmp_path):
     command = [sys.executable, "-m", "app.demo", "--database", str(path)]
     assert subprocess.run(command, capture_output=True).returncode == 0
     assert subprocess.run(command, capture_output=True).returncode != 0
-    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+    with TestClient(
+        create_app(path), client=("127.0.0.1", 50000), base_url="http://127.0.0.1"
+    ) as c:
         assert len(c.get("/students").json()) == 4
         assert len(report(c, date.today().strftime("%Y-%m"))["debtors"]) == 3
 
@@ -263,7 +307,9 @@ def test_mixed_currencies_keep_booked_debt_after_rate_change_and_restart(tmp_pat
         "rates": {"UZS": 1, "RUB": 150, "USD": 12000},
     }
     monkeypatch.setattr("app.main.ExchangeRateService.get", lambda _self: quote)
-    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+    with TestClient(
+        create_app(path), client=("127.0.0.1", 50000), base_url="http://127.0.0.1"
+    ) as c:
         s = student(c, "50000")
         for amount, currency in [("1000", "UZS"), ("10", "RUB"), ("2", "USD")]:
             r = c.post(
@@ -284,7 +330,9 @@ def test_mixed_currencies_keep_booked_debt_after_rate_change_and_restart(tmp_pat
         assert c.get(f"/students/{s['id']}/payments").json() == history
         assert report(c)["total_debt"] == "23500.00"
         assert report(c, "2026-11")["total_debt"] == "50000.00"
-    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+    with TestClient(
+        create_app(path), client=("127.0.0.1", 50000), base_url="http://127.0.0.1"
+    ) as c:
         assert c.get(f"/students/{s['id']}/payments").json() == history
         assert report(c)["total_debt"] == "23500.00"
         assert (

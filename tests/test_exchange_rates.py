@@ -3,6 +3,7 @@ import sqlite3
 import threading
 import time
 from datetime import date, datetime, timezone
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,6 +37,23 @@ def test_cbu_and_cbr_normalization():
     rates, d = normalize_cbr(CBR, date(2026, 10, 28))
     assert round(rates["RUB"]) == 150 and round(rates["USD"]) == 11994
     assert d == date(2026, 10, 28)
+
+
+def test_cbr_cross_rate_retains_decimal_precision():
+    from decimal import localcontext
+
+    payload = (
+        b'<ValCurs Date="28.10.2026">'
+        b"<Valute><CharCode>USD</CharCode><Nominal>1</Nominal><Value>80.5307</Value></Valute>"
+        b"<Valute><CharCode>UZS</CharCode><Nominal>10000</Nominal><Value>67.8899</Value></Valute>"
+        b"</ValCurs>"
+    )
+    rates, _ = normalize_cbr(payload, date(2026, 10, 28))
+    assert isinstance(rates["USD"], Decimal)
+    with localcontext() as context:
+        context.prec = 60
+        exact = Decimal("80.5307") * Decimal(10000) / Decimal("67.8899")
+    assert rates["USD"] == exact
 
 
 def test_reject_invalid_dates_values_and_unsafe_or_oversized_xml():
@@ -100,6 +118,59 @@ def test_persistence_restart_and_stale_fallback_backoff(tmp_path):
     )
     assert fallback.get()["status"] == "fallback"
     assert fallback.get()["status"] == "fallback"
+
+
+def test_cache_persists_and_validates_exact_booking_rates(tmp_path):
+    from decimal import localcontext
+
+    payload = (
+        b'<ValCurs Date="28.10.2026">'
+        b"<Valute><CharCode>USD</CharCode><Nominal>1</Nominal><Value>80.5307</Value></Valute>"
+        b"<Valute><CharCode>UZS</CharCode><Nominal>10000</Nominal><Value>67.8899</Value></Valute>"
+        b"</ValCurs>"
+    )
+    exact_rates, _ = normalize_cbr(payload, date(2026, 10, 28))
+    service = ExchangeRateService(
+        tmp_path / "rates.json",
+        lambda _: (exact_rates, date(2026, 10, 28), "CBR"),
+        lambda: NOW,
+    )
+    first = service.get()
+    assert isinstance(first["rates"]["USD"], float)
+    assert first["booking_rates"]["USD"] == format(exact_rates["USD"], "f")
+    restarted = ExchangeRateService(
+        tmp_path / "rates.json", lambda _: (_ for _ in ()).throw(OSError()), lambda: NOW
+    )
+    restored = restarted.get()
+    assert restored["status"] == "stale"
+    assert restored["booking_rates"] == first["booking_rates"]
+    with localcontext() as context:
+        context.prec = 80
+        expected_cents = (Decimal("7548371392.39") * exact_rates["USD"] * 100).quantize(
+            Decimal("1")
+        )
+    assert expected_cents == Decimal("8953844858942808")
+
+
+def test_old_cache_without_booking_rates_remains_display_only(tmp_path):
+    path = tmp_path / "rates.json"
+    path.write_text(
+        json.dumps(
+            {
+                "base": "UZS",
+                "rates": {"UZS": 1, "RUB": 150, "USD": 12000},
+                "rate_date": "2026-10-28",
+                "fetched_at": "2026-10-28T12:00:00+00:00",
+                "status": "fresh",
+                "source": "CBU",
+            }
+        )
+    )
+    result = ExchangeRateService(
+        path, lambda _: (_ for _ in ()).throw(OSError()), lambda: NOW
+    ).get()
+    assert result["status"] == "stale"
+    assert "booking_rates" not in result
 
 
 def test_invalid_cache_shapes_and_oversized_cache_fall_back(tmp_path):
@@ -197,7 +268,11 @@ def test_api_returns_contract_without_network(tmp_path, monkeypatch):
     )
     from app.main import create_app
 
-    with TestClient(create_app(tmp_path / "db.sqlite3"), base_url="http://localhost") as client:
+    with TestClient(
+        create_app(tmp_path / "db.sqlite3"),
+        client=("127.0.0.1", 50000),
+        base_url="http://localhost",
+    ) as client:
         response = client.get("/exchange-rates")
     assert response.status_code == 200
     assert response.json()["base"] == "UZS"
@@ -215,7 +290,9 @@ def test_rate_cache_cannot_overwrite_database_with_matching_name(tmp_path, monke
     )
     db_path = tmp_path / "exchange-rates.json"
     cache_path = tmp_path / "exchange-rates.json.exchange-rates.json"
-    with TestClient(create_app(db_path), base_url="http://localhost") as client:
+    with TestClient(
+        create_app(db_path), client=("127.0.0.1", 50000), base_url="http://localhost"
+    ) as client:
         created = client.post(
             "/students",
             json={

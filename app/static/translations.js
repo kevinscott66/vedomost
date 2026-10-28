@@ -1,5 +1,11 @@
 window.VEDOMOST_TRANSLATIONS = {
   ru: {
+    paymentRateUnavailable: "Нет свежего официального курса. Оплата не записана. Повторите позже или укажите фактически полученную сумму в UZS.",
+    paymentAmountLimit: "Эквивалент оплаты в UZS выходит за допустимый диапазон.",
+    paymentTotalLimit: "Общая сумма оплат ученика за этот месяц превышает допустимый диапазон. Оплата не записана.",
+    paymentRetryConflict: "Этот ключ запроса уже использован для другой оплаты. Обновите страницу и проверьте историю перед повтором.",
+    checkPaymentFields: "Проверьте значения полей запроса.",
+
     startMonth: "Начало обучения",
     startMonthNote:
       "До этого месяца тариф не начисляется. Для старых оплат укажите реальный месяц начала.",
@@ -152,6 +158,12 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Укажите положительный целый ID ученика.",
   },
   en: {
+    paymentRateUnavailable: "A fresh official rate is unavailable. The payment was not recorded. Retry later or enter the amount actually received in UZS.",
+    paymentAmountLimit: "The UZS payment equivalent is outside the supported range.",
+    paymentTotalLimit: "This student’s monthly payment total exceeds the supported range. The payment was not recorded.",
+    paymentRetryConflict: "This request key belongs to another payment. Reload and check the history before retrying.",
+    checkPaymentFields: "Check the request field values.",
+
     startMonth: "Enrollment month",
     startMonthNote:
       "No fees are charged before this month. For historical payments, set the actual enrollment month.",
@@ -303,6 +315,12 @@ window.VEDOMOST_TRANSLATIONS = {
     invalidId: "Enter a positive integer student ID.",
   },
   uz: {
+    paymentRateUnavailable: "Yangi rasmiy kurs mavjud emas. To‘lov saqlanmadi. Keyinroq qayta urinib ko‘ring yoki amalda olingan UZS summasini kiriting.",
+    paymentAmountLimit: "To‘lovning UZS ekvivalenti ruxsat etilgan oraliqdan tashqarida.",
+    paymentTotalLimit: "Ushbu o‘quvchining oylik to‘lovlar jami ruxsat etilgan chegaradan oshdi. To‘lov saqlanmadi.",
+    paymentRetryConflict: "Bu so‘rov kaliti boshqa to‘lov uchun ishlatilgan. Sahifani yangilang va qayta urinishdan oldin tarixni tekshiring.",
+    checkPaymentFields: "So‘rov maydonlaridagi qiymatlarni tekshiring.",
+
     startMonth: "O‘qish boshlangan oy",
     startMonthNote:
       "Bu oydan oldin to‘lov hisoblanmaydi. Eski to‘lovlar uchun haqiqiy boshlanish oyini belgilang.",

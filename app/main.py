@@ -4,7 +4,7 @@ import re
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, localcontext
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -63,7 +63,7 @@ class PaymentInput(BaseModel):
 class Payment(PaymentInput):
     id: int
     base_amount: Decimal
-    exchange_rate: float
+    exchange_rate: Decimal
     rate_date: date | None
     rate_source: str | None
 
@@ -122,7 +122,7 @@ def payment_dict(row: sqlite3.Row) -> dict:
         "amount": money(row["original_amount_cents"]),
         "currency": row["currency"],
         "base_amount": money(row["amount_cents"]),
-        "exchange_rate": float(row["exchange_rate"]),
+        "exchange_rate": Decimal(row["exchange_rate"]),
         "rate_date": row["rate_date"],
         "rate_source": row["rate_source"],
         "date": row["paid_on"],
@@ -308,12 +308,18 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
             if snapshot.get("status") != "fresh" or snapshot.get("source") not in {"CBU", "CBR"}:
                 raise HTTPException(503, "Нет свежего официального курса для оплаты")
             try:
-                exchange_rate = Decimal(str(snapshot["rates"][payment.currency]))
+                booking_rates = snapshot.get("booking_rates", {})
+                rate_value = booking_rates.get(
+                    payment.currency, snapshot["rates"][payment.currency]
+                )
+                exchange_rate = Decimal(str(rate_value))
                 rate_date = date.fromisoformat(snapshot["rate_date"])
                 rate_source = snapshot["source"]
-                converted = (payment.amount * exchange_rate * 100).quantize(
-                    Decimal("1"), rounding=ROUND_HALF_UP
-                )
+                with localcontext() as context:
+                    context.prec = 80
+                    converted = (payment.amount * exchange_rate * 100).quantize(
+                        Decimal("1"), rounding=ROUND_HALF_UP
+                    )
                 base_cents = int(converted)
             except (KeyError, ValueError, ArithmeticError):
                 raise HTTPException(503, "Официальный курс недоступен") from None

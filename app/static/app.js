@@ -9,7 +9,7 @@ const number = (value) =>
   new Intl.NumberFormat(window.i18n.locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(window.currency.convert(value)) +
+  }).format(window.currency.convertExact(value)) +
   "\u00a0" +
   window.currency.unit;
 const paymentNumber = (value, currency) => {
@@ -19,7 +19,7 @@ const paymentNumber = (value, currency) => {
     new Intl.NumberFormat(window.i18n.locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(Number(value)) +
+    }).format(String(value)) +
     "\u00a0" +
     unit
   );
@@ -70,6 +70,13 @@ async function request(path, options = {}) {
       if (typeof data.detail === "string") {
         const known = {
           "Ученик не найден": "studentMissing",
+          "Месяц должен быть в формате YYYY-MM": "invalidMonth",
+          "Укажите существующий месяц с 0001-01 по 9999-12": "invalidMonth",
+          "Нет свежего официального курса для оплаты": "paymentRateUnavailable",
+          "Официальный курс недоступен": "paymentRateUnavailable",
+          "Сумма в UZS выходит за допустимый диапазон": "paymentAmountLimit",
+          "Monthly payment total exceeds storage limit": "paymentTotalLimit",
+          "Idempotency key used for a different payment": "paymentRetryConflict",
           "Дата оплаты раньше начала обучения": "paymentBeforeStart",
           "Начало обучения позже существующих оплат": "startAfterPayments",
           "Нельзя удалить ученика с оплатами: история должна сохраниться":
@@ -78,7 +85,7 @@ async function request(path, options = {}) {
         message = known[data.detail]
           ? t(known[data.detail])
           : response.status === 422
-            ? t("invalidMonth")
+            ? t("checkPaymentFields")
             : t("requestError");
       } else if (Array.isArray(data.detail))
         message = t("checkFields", {
@@ -206,7 +213,7 @@ function renderDebtors(report) {
   const parts = new Intl.NumberFormat(window.i18n.locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).formatToParts(window.currency.convert(report.total_debt));
+  }).formatToParts(window.currency.convertExact(report.total_debt));
   const whole = parts
     .filter((p) => p.type !== "decimal" && p.type !== "fraction")
     .map((p) => p.value)

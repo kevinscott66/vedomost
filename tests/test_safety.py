@@ -12,7 +12,11 @@ from app.main import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(tmp_path / "db.sqlite3"), base_url="http://127.0.0.1:8773") as c:
+    with TestClient(
+        create_app(tmp_path / "db.sqlite3"),
+        client=("127.0.0.1", 50000),
+        base_url="http://127.0.0.1:8773",
+    ) as c:
         yield c
 
 
@@ -115,3 +119,20 @@ def test_concurrent_delete_and_payment_preserve_references(client):
         deletion = pool.submit(client.delete, f"/students/{sid}")
         codes = payment.result().status_code, deletion.result().status_code
     assert codes in {(201, 409), (404, 204)}
+
+
+@pytest.mark.parametrize("peer", ["198.51.100.12", "192.168.1.12", "2001:db8::12"])
+def test_remote_peer_cannot_forge_loopback_host(tmp_path, peer):
+    with TestClient(
+        create_app(tmp_path / "remote.sqlite3"), base_url="http://127.0.0.1", client=(peer, 50000)
+    ) as remote:
+        for path in ["/", "/students", "/exchange-rates", "/static/app.js"]:
+            assert remote.get(path, headers={"Host": "localhost"}).status_code == 403
+        assert remote.post("/students", headers={"Host": "localhost"}, json={}).status_code == 403
+
+
+def test_ipv6_loopback_peer_remains_supported(tmp_path):
+    with TestClient(
+        create_app(tmp_path / "ipv6.sqlite3"), base_url="http://[::1]", client=("::1", 50000)
+    ) as local:
+        assert local.get("/students").status_code == 200

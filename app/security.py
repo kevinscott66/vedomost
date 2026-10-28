@@ -1,5 +1,6 @@
 """Browser boundary for a deliberately local, unauthenticated demonstration."""
 
+from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 from starlette.datastructures import Headers
@@ -13,6 +14,11 @@ class LocalBoundaryMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        peer = scope.get("client")
+        try:
+            loopback_peer = bool(peer) and ip_address(peer[0]).is_loopback
+        except (ValueError, TypeError):
+            loopback_peer = False
         headers = Headers(scope=scope)
         host = headers.get("host", "").lower()
         try:
@@ -27,7 +33,9 @@ class LocalBoundaryMiddleware:
             valid_host = False
         error = None
         status = 403
-        if not valid_host:
+        if not loopback_peer:
+            error = "Only loopback clients are allowed"
+        elif not valid_host:
             error, status = "Only explicit loopback hosts are allowed", 400
         elif scope["method"] in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = headers.get("origin")

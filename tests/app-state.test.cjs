@@ -187,7 +187,7 @@ async function runtime() {
         keyFor: () => null,
         formatMonth: (value) => value,
       },
-      currency: { convert: Number, unit: "UZS", code: "UZS" },
+      currency: { convertExact: String, unit: "UZS", code: "UZS" },
       addEventListener: (...args) => events.addEventListener(...args),
     },
   };
@@ -295,7 +295,7 @@ test("payment history keeps the original currency and shows frozen UZS equivalen
       {
         amount: "12.50",
         currency: "USD",
-        base_amount: "148000.00",
+        base_amount: "90071992547409.91",
         date: "2026-10-28",
       },
     ],
@@ -303,7 +303,10 @@ test("payment history keeps the original currency and shows frozen UZS equivalen
   await opening;
   assert.match(app.element("history-list").textContent, /12\.50\s+\$/);
   assert.match(app.element("history-list").textContent, /baseEquivalent/);
-  assert.match(app.element("history-list").textContent, /148,000\.00.*currencyUnit/);
+  assert.match(
+    app.element("history-list").textContent,
+    /90,071,992,547,409\.91.*currencyUnit/,
+  );
 });
 
 for (const outcome of ["success", "error"]) {
@@ -426,3 +429,21 @@ test("payment period notice follows language without reviving a cleared notice",
   await app.display("languagechange");
   assert.equal(app.element("payment-message").textContent, "");
 });
+
+for (const [detail, status, expected] of [
+  ["Нет свежего официального курса для оплаты", 503, "paymentRateUnavailable"],
+  ["Monthly payment total exceeds storage limit", 422, "paymentTotalLimit"],
+  ["Сумма в UZS выходит за допустимый диапазон", 422, "paymentAmountLimit"],
+]) {
+  test(`payment failure identifies ${expected} without blaming the month`, async () => {
+    const app = await runtime();
+    await app.payButtons()[0].fire("click");
+    const draft = app.element("pay-amount").value;
+    const pending = app.element("payment-form").fire("submit");
+    await app.respond(app.requests.at(-1), { detail }, status);
+    await pending;
+    assert.equal(app.element("payment-message").textContent, expected);
+    assert.equal(app.element("pay-amount").value, draft);
+    assert.equal(app.element("save-payment").disabled, false);
+  });
+}

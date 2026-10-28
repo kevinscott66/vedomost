@@ -212,3 +212,43 @@ test("refresh changes the display quote without mutating booked payment values",
   assert.equal(env.currency.convert(booked.base_amount), 1.5);
   assert.deepEqual(booked, { amount: "2.00", currency: "USD", base_amount: "24000.00" });
 });
+
+test("exact display conversion preserves large decimal cents and rounds half up", async () => {
+  const env = runtime("UZS");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(env.currency.convertExact("0"), "0.00");
+  assert.equal(env.currency.convertExact("90071992547409.91"), "90071992547409.91");
+  assert.equal(env.currency.convertExact("1.005"), "1.01");
+  env.currency.set("USD");
+  assert.equal(env.currency.convertExact("90071992547409.91"), "7505999378.95");
+});
+
+test("exact display conversion accepts exponent-form exchange rates", async () => {
+  let quote = { ...valid, rates: { ...valid.rates, USD: 1.5e-7 } };
+  const env = runtime("USD", async () => ({ ok: true, json: async () => quote }));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(env.currency.convertExact("0.0000003"), "2.00");
+});
+
+test("exact display conversion uses validated high-precision booking rates", async () => {
+  let quote = {
+    ...valid,
+    rates: { UZS: 1, RUB: 150, USD: 2 },
+    booking_rates: {
+      UZS: "1",
+      RUB: "150.000000000000000000000000000000000000000000000000000000000000",
+      USD: "2.000000000000000000000000000000000000000000000000000000000001",
+    },
+  };
+  const env = runtime("USD", async () => ({ ok: true, json: async () => quote }));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(env.currency.convertExact("0.01"), "0.00");
+
+  quote = {
+    ...quote,
+    booking_rates: { ...quote.booking_rates, USD: "3.000000000000000000000000000000000000000000000000000000000001" },
+  };
+  await env.currency.refresh();
+  assert.equal(env.currency.convertExact("0.01"), "0.00");
+  assert.match(env.note.textContent, /currencyStale/);
+});

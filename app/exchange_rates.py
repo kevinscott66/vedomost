@@ -1,9 +1,8 @@
-"""Cached, public exchange-rate snapshots for display-only currency conversion."""
+"""Cached official FX snapshots for indicative display and payment booking."""
 
 from __future__ import annotations
 
 import json
-import math
 import os
 import re
 import tempfile
@@ -13,6 +12,7 @@ import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation, localcontext
 from pathlib import Path
 
 FALLBACK = {
@@ -49,26 +49,52 @@ def _safe_open(url: str) -> bytes:
     return data
 
 
-def _valid_rate(value: float) -> bool:
-    return math.isfinite(value) and 0.000001 <= value <= 1_000_000_000
+def _as_decimal(value) -> Decimal:
+    if isinstance(value, bool):
+        raise ValueError("Invalid rate")
+    try:
+        result = value if isinstance(value, Decimal) else Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        raise ValueError("Invalid rate") from None
+    if not result.is_finite():
+        raise ValueError("Invalid rate")
+    return result
 
 
-def normalize_cbu(data: bytes, requested: date) -> tuple[dict[str, float], date]:
+def _valid_rate(value) -> bool:
+    try:
+        rate = _as_decimal(value)
+        return Decimal("0.000001") <= rate <= Decimal("1000000000")
+    except ValueError:
+        return False
+
+
+def _public_rate(value: Decimal) -> float:
+    return float(value)
+
+
+def _booking_rate(value: Decimal) -> str:
+    return format(value, "f")
+
+
+def normalize_cbu(data: bytes, requested: date) -> tuple[dict[str, Decimal], date]:
     if len(data) > MAX_BYTES:
         raise ValueError("Rate response too large")
-    rows = json.loads(data)
+    rows = json.loads(data, parse_float=Decimal, parse_int=Decimal)
     if not isinstance(rows, list):
         raise ValueError("Invalid CBU response")
-    result: dict[str, float] = {}
+    result: dict[str, Decimal] = {}
     dates: list[date] = []
     for row in rows:
         if not isinstance(row, dict) or row.get("Ccy") not in {"USD", "RUB"}:
             continue
         d = datetime.strptime(row["Date"], "%d.%m.%Y").date()
-        nominal, rate = float(row["Nominal"]), float(row["Rate"])
+        nominal, rate = _as_decimal(row["Nominal"]), _as_decimal(row["Rate"])
         if not _valid_rate(nominal) or not _valid_rate(rate):
             raise ValueError("Invalid CBU nominal/rate")
-        normalized = rate / nominal
+        with localcontext() as ctx:
+            ctx.prec = 60
+            normalized = rate / nominal
         if d > requested or d < requested - MAX_RATE_AGE or not _valid_rate(normalized):
             raise ValueError("Invalid CBU rate date/value")
         code = row["Ccy"]
@@ -81,7 +107,7 @@ def normalize_cbu(data: bytes, requested: date) -> tuple[dict[str, float], date]
     return result, dates[0]
 
 
-def normalize_cbr(data: bytes, requested: date) -> tuple[dict[str, float], date]:
+def normalize_cbr(data: bytes, requested: date) -> tuple[dict[str, Decimal], date]:
     if len(data) > MAX_BYTES:
         raise ValueError("Rate response too large")
     if re.search(rb"<!\s*(DOCTYPE|ENTITY)", data, re.I):
@@ -90,22 +116,26 @@ def normalize_cbr(data: bytes, requested: date) -> tuple[dict[str, float], date]
     rate_date = datetime.strptime(root.attrib["Date"], "%d.%m.%Y").date()
     if rate_date > requested or rate_date < requested - MAX_RATE_AGE:
         raise ValueError("Invalid CBR rate date")
-    values = {}
+    values: dict[str, Decimal] = {}
     for item in root.findall("Valute"):
         code = item.findtext("CharCode")
         if code in {"USD", "UZS"}:
-            nominal = float(item.findtext("Nominal", "").replace(" ", "").replace(",", "."))
-            value = float(item.findtext("Value", "").replace(" ", "").replace(",", "."))
+            nominal = _as_decimal(item.findtext("Nominal", "").replace(" ", "").replace(",", "."))
+            value = _as_decimal(item.findtext("Value", "").replace(" ", "").replace(",", "."))
             if not _valid_rate(nominal) or not _valid_rate(value):
                 raise ValueError("Invalid CBR nominal/value")
-            normalized = nominal / value if code == "UZS" else value / nominal
+            with localcontext() as ctx:
+                ctx.prec = 60
+                normalized = nominal / value if code == "UZS" else value / nominal
             if not _valid_rate(normalized) or code in values:
                 raise ValueError("Invalid CBR rate")
             values[code] = normalized
     if set(values) != {"USD", "UZS"}:
         raise ValueError("Incomplete CBR response")
     per_rub = values["UZS"]
-    rates = {"RUB": per_rub, "USD": values["USD"] * per_rub}
+    with localcontext() as ctx:
+        ctx.prec = 60
+        rates = {"RUB": per_rub, "USD": values["USD"] * per_rub}
     if not all(_valid_rate(v) for v in rates.values()):
         raise ValueError("Invalid CBR cross rate")
     return rates, rate_date
@@ -155,6 +185,30 @@ class ExchangeRateService:
                 if fetched_at > now or rate_date > moscow_today:
                     raise ValueError("Cache date is in the future")
                 item["rates"] = {key: float(value) for key, value in raw_rates.items()}
+                raw_booking_rates = item.get("booking_rates")
+                if raw_booking_rates is not None:
+                    if not isinstance(raw_booking_rates, dict) or set(raw_booking_rates) != {
+                        "UZS",
+                        "RUB",
+                        "USD",
+                    }:
+                        raise ValueError("Invalid cached booking rates")
+                    booking_rates = {}
+                    for key, value in raw_booking_rates.items():
+                        if not isinstance(value, str) or len(value) > 128:
+                            raise ValueError("Invalid cached booking rate")
+                        booking_rates[key] = _as_decimal(value)
+                    if (
+                        booking_rates["UZS"] != 1
+                        or any(not _valid_rate(value) for value in booking_rates.values())
+                        or any(
+                            float(booking_rates[key]) != item["rates"][key] for key in booking_rates
+                        )
+                    ):
+                        raise ValueError("Inconsistent cached booking rates")
+                    item["booking_rates"] = {
+                        key: _booking_rate(value) for key, value in booking_rates.items()
+                    }
                 item["status"] = "stale"
                 return item
         except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError, RecursionError):
@@ -200,6 +254,12 @@ class ExchangeRateService:
                 except OSError:
                     pass
 
+    def _copy_snapshot(self):
+        copy = dict(self._snapshot, rates=dict(self._snapshot["rates"]))
+        if "booking_rates" in copy:
+            copy["booking_rates"] = dict(copy["booking_rates"])
+        return copy
+
     def get(self):
         with self._lock:
             now = self.now().astimezone(timezone.utc)
@@ -210,7 +270,7 @@ class ExchangeRateService:
                 and self._fetched_day == requested
                 and mono - self._fetched_mono < 3600
             ):
-                return dict(self._snapshot, rates=dict(self._snapshot["rates"]))
+                return self._copy_snapshot()
             if self._failed_mono and mono - self._failed_mono < 300:
                 return self._current_stale()
             try:
@@ -223,12 +283,16 @@ class ExchangeRateService:
                     raise ValueError("Invalid source or rate date")
                 if rate_date > requested:
                     raise ValueError("Fetched rate date is in the future")
-                rates = {k: float(v) for k, v in rates.items()}
+                rates = {k: _as_decimal(v) for k, v in rates.items()}
                 if set(rates) != {"RUB", "USD"} or not all(_valid_rate(v) for v in rates.values()):
                     raise ValueError("Invalid fetched rates")
                 item = {
                     "base": "UZS",
-                    "rates": {"UZS": 1.0, **rates},
+                    "rates": {"UZS": 1.0, **{k: _public_rate(v) for k, v in rates.items()}},
+                    "booking_rates": {
+                        "UZS": "1",
+                        **{k: _booking_rate(v) for k, v in rates.items()},
+                    },
                     "rate_date": rate_date.isoformat(),
                     "fetched_at": self.now().astimezone(timezone.utc).isoformat(),
                     "status": "fresh",
@@ -247,9 +311,9 @@ class ExchangeRateService:
                 self._snapshot["status"] = (
                     "stale" if self._snapshot["source"] != "reference" else "fallback"
                 )
-            return dict(self._snapshot, rates=dict(self._snapshot["rates"]))
+            return self._copy_snapshot()
 
     def _current_stale(self):
         if self._snapshot["source"] != "reference":
             self._snapshot["status"] = "stale"
-        return dict(self._snapshot, rates=dict(self._snapshot["rates"]))
+        return self._copy_snapshot()

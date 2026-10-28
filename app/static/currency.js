@@ -1,6 +1,7 @@
 "use strict";
 (() => {
   const rates = { UZS: 1, RUB: 148.04, USD: 11918.98 };
+  let exactRates = { UZS: "1", RUB: "148.04", USD: "11918.98" };
   let selected = "UZS";
   let rateDate = "2026-10-28";
   let fetchedAt = null;
@@ -9,6 +10,55 @@
   let loading = true;
   let lastStarted = 0;
   let inFlight = null;
+  function decimalParts(value) {
+    const match = String(value).trim().match(/^([+-]?)(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/i);
+    if (!match) throw new TypeError("Invalid decimal amount");
+    const fraction = match[3] || "";
+    const exponent = Number(match[4] || 0);
+    let coefficient = BigInt((match[1] === "-" ? "-" : "") + match[2] + fraction);
+    let scale = fraction.length - exponent;
+    if (scale < 0) {
+      coefficient *= 10n ** BigInt(-scale);
+      scale = 0;
+    }
+    return { coefficient, scale };
+  }
+  function convertExact(value, rate) {
+    const amount = decimalParts(value);
+    const exchange = decimalParts(rate);
+    let numerator = amount.coefficient * 10n ** BigInt(exchange.scale) * 100n;
+    const denominator = exchange.coefficient * 10n ** BigInt(amount.scale);
+    if (denominator <= 0n) throw new TypeError("Invalid exchange rate");
+    const negative = numerator < 0n;
+    if (negative) numerator = -numerator;
+    const cents = (numerator + denominator / 2n) / denominator;
+    const whole = cents / 100n;
+    const minor = String(cents % 100n).padStart(2, "0");
+    return `${negative && cents ? "-" : ""}${whole}.${minor}`;
+  }
+  function bookingRates(data) {
+    if (data.booking_rates === undefined) return null;
+    const values = data.booking_rates;
+    if (
+      !values ||
+      Object.keys(values).sort().join(",") !== "RUB,USD,UZS" ||
+      values.UZS !== "1"
+    )
+      return false;
+    for (const code of ["RUB", "USD"]) {
+      const value = values[code];
+      if (
+        typeof value !== "string" ||
+        value.length > 128 ||
+        !/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value) ||
+        !Number.isFinite(Number(value)) ||
+        Number(value) <= 0 ||
+        Number(value) !== data.rates[code]
+      )
+        return false;
+    }
+    return { UZS: "1", RUB: values.RUB, USD: values.USD };
+  }
   try {
     const saved = localStorage.getItem("vedomost-currency");
     if (Object.hasOwn(rates, saved)) selected = saved;
@@ -87,13 +137,15 @@
       return false;
     if ((data.status === "fallback") !== (data.source === "reference"))
       return false;
-    return ["RUB", "USD"].every(
+    if (!["RUB", "USD"].every(
       (c) =>
         typeof data.rates[c] === "number" &&
         Number.isFinite(data.rates[c]) &&
         data.rates[c] > 0 &&
         data.rates[c] <= 1e9,
-    );
+    ))
+      return false;
+    return bookingRates(data) !== false;
   }
   function refresh(force = false) {
     const now = Date.now();
@@ -120,6 +172,12 @@
         if (!validPayload(data)) throw new Error("invalid rates");
         rates.RUB = data.rates.RUB;
         rates.USD = data.rates.USD;
+        exactRates =
+          bookingRates(data) || {
+            UZS: "1",
+            RUB: String(data.rates.RUB),
+            USD: String(data.rates.USD),
+          };
         rateDate = data.rate_date;
         fetchedAt = data.fetched_at;
         status = data.status;
@@ -144,6 +202,9 @@
   window.currency = {
     convert(value) {
       return Number(value) / rates[selected];
+    },
+    convertExact(value) {
+      return convertExact(value, exactRates[selected]);
     },
     get unit() {
       return selected === "UZS"
