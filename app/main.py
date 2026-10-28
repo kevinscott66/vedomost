@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from app.database import ROOT, STATIC, Database
+from app.exchange_rates import ExchangeRateService
 from app.security import LocalBoundaryMiddleware
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
@@ -121,6 +122,9 @@ def payment_dict(row: sqlite3.Row) -> dict:
 def create_app(database_path: str | Path | None = None) -> FastAPI:
     database = Database(database_path)
     connect = database.connect
+    exchange_rates = ExchangeRateService(
+        database.path.with_name(database.path.name + ".exchange-rates.json")
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -187,6 +191,10 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         with connect() as db:
             rows = db.execute("SELECT * FROM students ORDER BY name COLLATE NOCASE, id")
             return [student_dict(row) for row in rows]
+
+    @api.get("/exchange-rates")
+    def get_exchange_rates():
+        return exchange_rates.get()
 
     @api.post("/students", response_model=Student, status_code=201)
     def add_student(student: StudentInput):

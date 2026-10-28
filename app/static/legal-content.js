@@ -15,7 +15,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Cookies и настройки",
-        "Приложение не устанавливает cookies и не использует рекламные трекеры или аналитику. В localStorage браузера сохраняются только тема, язык и валюта отображения: vedomost-theme, vedomost-language и vedomost-currency. Настройки можно удалить через средства браузера; при запрете хранилища приложение продолжает работать с настройками по умолчанию. Шрифты, иконки и документация загружаются с того же сервера. Внешние сайты открываются только по отдельным ссылкам и применяют собственные правила.",
+        "Приложение не устанавливает cookies и не использует рекламные трекеры или аналитику. В localStorage браузера сохраняются только тема, язык и валюта отображения: vedomost-theme, vedomost-language и vedomost-currency. Настройки можно удалить через средства браузера; при запрете хранилища приложение продолжает работать с настройками по умолчанию. Шрифты, иконки и документация загружаются с того же сервера. Для обновления курсов сервер запрашивает публичные данные ЦБ Узбекистана и, при недоступности, Банка России. Эти сайты получают сетевой адрес сервера и сведения о HTTP-запросе; записи учеников и оплат им не передаются. По внешним ссылкам действуют правила соответствующих сайтов.",
       ],
       [
         "Защита и ограничения",
@@ -37,7 +37,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Правила расчёта",
-        "Начисления начинаются с указанного месяца начала обучения. Текущий тариф ученика сравнивается с оплатами за выбранный календарный месяц. Переплата не переносится; изменение тарифа влияет и на прошлые месяцы. Учёт и ввод ведутся в UZS. RUB и USD служат только для справочного отображения по снимку курса от 28.10.2026 и не меняют суммы в базе.",
+        "Начисления начинаются с указанного месяца начала обучения. Текущий тариф ученика сравнивается с оплатами за выбранный календарный месяц. Переплата не переносится; изменение тарифа влияет и на прошлые месяцы. Учёт и ввод ведутся в UZS. RUB и USD служат для справочного отображения и не меняют суммы в базе. Курс проверяется автоматически; источник, дата курса и время получения показаны в интерфейсе. При сбое используется последний сохранённый курс с отметкой об устаревании, а до первой загрузки — явно обозначенный резервный курс.",
       ],
       [
         "Доступ и использование",
@@ -79,7 +79,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Cookies va sozlamalar",
-        "Ilova cookies o‘rnatmaydi, reklama kuzatuvchilari va tahlil xizmatlaridan foydalanmaydi. Brauzer localStorage xotirasida faqat mavzu, til va ko‘rsatish valyutasi — vedomost-theme, vedomost-language hamda vedomost-currency saqlanadi. Ularni brauzer sozlamalarida o‘chirish mumkin. Xotira bloklansa, ilova standart sozlamalar bilan ishlaydi. Shriftlar, belgilar va hujjatlar ayni serverdan yuklanadi. Tashqi havolalar orqali ochilgan saytlar o‘z qoidalariga ega.",
+        "Ilova cookies o‘rnatmaydi, reklama kuzatuvchilari va tahlil xizmatlaridan foydalanmaydi. Brauzer localStorage xotirasida faqat mavzu, til va ko‘rsatish valyutasi — vedomost-theme, vedomost-language hamda vedomost-currency saqlanadi. Ularni brauzer sozlamalarida o‘chirish mumkin. Xotira bloklansa, ilova standart sozlamalar bilan ishlaydi. Shriftlar, belgilar va hujjatlar ayni serverdan yuklanadi. Kurslarni yangilash uchun server O‘zbekiston Markaziy bankidan, u mavjud bo‘lmaganda Rossiya Bankidan ochiq ma’lumotlarni so‘raydi. Bu saytlar serverning tarmoq manzili va HTTP so‘rovi haqidagi ma’lumotlarni oladi; o‘quvchilar va to‘lovlar qaydlari ularga yuborilmaydi. Tashqi havolalardagi saytlarning o‘z qoidalari amal qiladi.",
       ],
       [
         "Himoya va cheklovlar",
@@ -101,7 +101,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Hisoblash qoidalari",
-        "Hisoblash ko‘rsatilgan o‘qish boshlangan oydan boshlanadi. O‘quvchining joriy oylik tarifi tanlangan kalendar oy to‘lovlari bilan taqqoslanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi; tarif o‘zgarishi oldingi oylar hisobiga ham ta’sir qiladi. Hisob yuritish va kiritish UZSda amalga oshiriladi. RUB va USD faqat 28.10.2026 sanasidagi kurs bo‘yicha ma’lumot uchun ko‘rsatiladi; bazadagi summalar o‘zgarmaydi.",
+        "Hisoblash ko‘rsatilgan o‘qish boshlangan oydan boshlanadi. O‘quvchining joriy oylik tarifi tanlangan kalendar oy to‘lovlari bilan taqqoslanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi; tarif o‘zgarishi oldingi oylar hisobiga ham ta’sir qiladi. Hisob yuritish va kiritish UZSda amalga oshiriladi. RUB va USD ma’lumot uchun ko‘rsatiladi; bazadagi summalar o‘zgarmaydi. Kurs avtomatik tekshiriladi; manba, kurs sanasi va olingan vaqt interfeysda ko‘rsatiladi. Aloqa uzilsa, eskirgan deb belgilangan oxirgi saqlangan kurs, birinchi yuklashgacha esa alohida belgilangan zaxira kurs ishlatiladi.",
       ],
       [
         "Foydalanish",
@@ -143,7 +143,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Cookies, preferences and recipients",
-        "The app sets no cookies and includes no advertising trackers or analytics. Browser localStorage holds only theme, language and display-currency preferences under vedomost-theme, vedomost-language and vedomost-currency. You can remove them in browser settings; blocking storage does not prevent the app from working. Fonts, icons and documentation are served locally. The demo does not sell, share for behavioural advertising, or automatically send ledger records to external recipients. Linked third-party sites have their own policies.",
+        "The app sets no cookies and includes no advertising trackers or analytics. Browser localStorage holds only theme, language and display-currency preferences under vedomost-theme, vedomost-language and vedomost-currency. You can remove them in browser settings; blocking storage does not prevent the app from working. Fonts, icons and documentation are served locally. The demo does not sell, share for behavioural advertising, or automatically send ledger records to external recipients. To update exchange rates, the server requests public data from the Central Bank of Uzbekistan, or the Bank of Russia if that source is unavailable. These providers receive the server’s network address and HTTP request information, but no student or payment records. Linked third-party sites have their own policies.",
       ],
       [
         "Security and children",
@@ -169,7 +169,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Calculation rules",
-        "Charges start in the recorded enrollment month. The current monthly fee is compared with payments in the selected calendar month. Overpayments do not carry forward; changing a fee also changes past monthly balances. Records and inputs use UZS. RUB and USD are indicative displays using the rate snapshot dated 28 October 2026; they do not change stored amounts.",
+        "Charges start in the recorded enrollment month. The current monthly fee is compared with payments in the selected calendar month. Overpayments do not carry forward; changing a fee also changes past monthly balances. Records and inputs use UZS. RUB and USD are indicative displays and do not change stored amounts. Rates are checked automatically; the interface shows the source, effective date and retrieval time. If an update fails, the last saved rate is marked as outdated; before the first successful load, a clearly labelled reference rate is used.",
       ],
       [
         "Permitted use",

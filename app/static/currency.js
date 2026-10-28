@@ -1,23 +1,145 @@
 "use strict";
 (() => {
-  // Dated reference snapshot; display only, never a payment/exchange quote.
-  const rates = Object.freeze({ UZS: 1, RUB: 148.04, USD: 11918.98 });
+  const rates = { UZS: 1, RUB: 148.04, USD: 11918.98 };
   let selected = "UZS";
+  let rateDate = "2026-10-28";
+  let fetchedAt = null;
+  let status = "fallback";
+  let source = "reference";
+  let loading = true;
+  let lastStarted = 0;
+  let inFlight = null;
   try {
     const saved = localStorage.getItem("vedomost-currency");
     if (Object.hasOwn(rates, saved)) selected = saved;
   } catch {}
   const picker = document.getElementById("currency");
+  const fmtDate = (value) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return "";
+    const [year, month, day] = value.split("-").map(Number);
+    return new Intl.DateTimeFormat(window.i18n.locale, {
+      dateStyle: "medium",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+  };
+  const fmtTime = (value) => {
+    if (!value) return window.i18n.t("currencyNeverFetched");
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? ""
+      : new Intl.DateTimeFormat(window.i18n.locale, {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(date);
+  };
   function update() {
     if (picker) picker.value = selected;
     const note = document.getElementById("currency-note");
-    if (note)
-      note.textContent = window.i18n.t("currencyNote", {
-        rate:
-          selected === "UZS"
-            ? ""
-            : `1 ${selected} = ${new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 2 }).format(rates[selected])} UZS · 28.10.2026`,
+    if (!note) return;
+    const names = {
+      CBU: window.i18n.t("currencySourceCBU"),
+      CBR: window.i18n.t("currencySourceCBR"),
+      reference: window.i18n.t("currencySourceReference"),
+    };
+    const labels = {
+      fresh: window.i18n.t("currencyFresh"),
+      stale: window.i18n.t("currencyStale"),
+      fallback: window.i18n.t("currencyFallback"),
+      loading: window.i18n.t("currencyLoading"),
+    };
+    const rate =
+      selected === "UZS"
+        ? ""
+        : `1 ${selected} = ${new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 2 }).format(rates[selected])} UZS.`;
+    note.textContent = window.i18n.t("currencyNote", {
+      rate,
+      source: names[source],
+      rateDate: fmtDate(rateDate),
+      fetchedAt: fmtTime(fetchedAt),
+      freshness: labels[loading ? "loading" : status],
+    });
+  }
+  function validPayload(data) {
+    if (
+      !data ||
+      data.base !== "UZS" ||
+      !data.rates ||
+      data.rates.UZS !== 1 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(data.rate_date || "")
+    )
+      return false;
+    const d = new Date(`${data.rate_date}T00:00:00Z`);
+    if (
+      Number.isNaN(d.getTime()) ||
+      d.toISOString().slice(0, 10) !== data.rate_date
+    )
+      return false;
+    if (
+      !["fresh", "stale", "fallback"].includes(data.status) ||
+      !["CBU", "CBR", "reference"].includes(data.source)
+    )
+      return false;
+    if (
+      data.status !== "fallback" &&
+      (typeof data.fetched_at !== "string" ||
+        Number.isNaN(Date.parse(data.fetched_at)))
+    )
+      return false;
+    if ((data.status === "fallback") !== (data.source === "reference"))
+      return false;
+    return ["RUB", "USD"].every(
+      (c) =>
+        typeof data.rates[c] === "number" &&
+        Number.isFinite(data.rates[c]) &&
+        data.rates[c] > 0 &&
+        data.rates[c] <= 1e9,
+    );
+  }
+  function refresh(force = false) {
+    const now = Date.now();
+    if (inFlight) return inFlight;
+    if (!force && now - lastStarted < 60000) return Promise.resolve(false);
+    lastStarted = now;
+    if (typeof fetch !== "function") {
+      loading = false;
+      update();
+      return Promise.resolve(false);
+    }
+    loading = true;
+    update();
+    let timer;
+    const controller =
+      typeof AbortController === "function" ? new AbortController() : null;
+    if (controller) timer = setTimeout(() => controller.abort(), 10000);
+    inFlight = fetch("/exchange-rates", { signal: controller?.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error("rates unavailable");
+        return res.json();
+      })
+      .then((data) => {
+        if (!validPayload(data)) throw new Error("invalid rates");
+        rates.RUB = data.rates.RUB;
+        rates.USD = data.rates.USD;
+        rateDate = data.rate_date;
+        fetchedAt = data.fetched_at;
+        status = data.status;
+        source = data.source;
+        loading = false;
+        update();
+        window.dispatchEvent(new Event("currencychange"));
+        return true;
+      })
+      .catch(() => {
+        loading = false;
+        if (status === "fresh") status = "stale";
+        update();
+        return false;
+      })
+      .finally(() => {
+        if (timer !== undefined) clearTimeout(timer);
+        inFlight = null;
       });
+    return inFlight;
   }
   window.currency = {
     convert(value) {
@@ -42,10 +164,21 @@
       update();
       window.dispatchEvent(new Event("currencychange"));
     },
+    refresh() {
+      return refresh(true);
+    },
   };
   picker?.addEventListener("change", (e) =>
     window.currency.set(e.target.value),
   );
   window.addEventListener("languagechange", update);
+  window.addEventListener("online", () => refresh());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refresh();
+  });
+  setInterval(() => {
+    if (document.visibilityState === "visible") refresh();
+  }, 900000);
   update();
+  refresh();
 })();
