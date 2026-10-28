@@ -1,17 +1,21 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
+const t = (key, values) => window.i18n.t(key, values);
 const localDate = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 const number = (value) =>
-  new Intl.NumberFormat("ru-RU", {
+  new Intl.NumberFormat(window.i18n.locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
 let students = [],
   deleteId = null,
   generation = 0;
+let paymentPending = false;
+let lastReport = null,
+  historyStudent = null;
 $("month").value = localDate().slice(0, 7);
 $("pay-date").value = localDate();
 function node(tag, text, cls) {
@@ -27,18 +31,42 @@ function button(text, action, cls = "text-button") {
   return b;
 }
 async function request(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: { "Content-Type": "application/json", ...options.headers },
+    });
+  } catch {
+    throw new Error(t("requestError"));
+  }
   if (!response.ok) {
-    let message = "Не удалось выполнить запрос. Попробуйте ещё раз.";
+    let message = t("requestError");
     try {
       const data = await response.json();
-      if (typeof data.detail === "string") message = data.detail;
-      else if (Array.isArray(data.detail))
-        message =
-          "Проверьте поля: " + data.detail.map((e) => e.loc.at(-1)).join(", ");
+      if (typeof data.detail === "string") {
+        const known = {
+          "Ученик не найден": "studentMissing",
+          "Нельзя удалить ученика с оплатами: история должна сохраниться":
+            "historyProtected",
+        };
+        message = known[data.detail]
+          ? t(known[data.detail])
+          : response.status === 422
+            ? t("invalidMonth")
+            : t("requestError");
+      } else if (Array.isArray(data.detail))
+        message = t("checkFields", {
+          fields: data.detail
+            .map((e) =>
+              t(
+                { student_id: "student", monthly_fee: "monthlyFee" }[
+                  e.loc.at(-1)
+                ] || e.loc.at(-1),
+              ),
+            )
+            .join(", "),
+        });
     } catch {}
     throw new Error(message);
   }
@@ -46,6 +74,9 @@ async function request(path, options = {}) {
 }
 function message(id, text, error = false) {
   $(id).textContent = text;
+  const key = window.i18n.keyFor(text);
+  if (key) $(id).dataset.statusKey = key;
+  else delete $(id).dataset.statusKey;
   $(id).classList.toggle("error", error);
 }
 function empty(title, text) {
@@ -65,35 +96,34 @@ function renderStudents() {
   $("student-count").textContent = students.length;
   const selected = $("pay-student").value;
   $("pay-student").replaceChildren(
-    new Option("Выберите ученика", ""),
+    new Option(t("chooseStudent"), ""),
     ...students.map((s) => new Option(`${s.name} — ${s.group}`, s.id)),
   );
   if (students.some((s) => String(s.id) === selected))
     $("pay-student").value = selected;
-  $("save-payment").disabled = !students.length;
+  $("save-payment").disabled = paymentPending || !students.length;
   const list = $("students-list");
   list.replaceChildren();
   if (!students.length) {
-    list.append(
-      empty(
-        "Начните с ученика",
-        "Добавьте имя, группу и месячную сумму оплаты.",
-      ),
-    );
+    list.append(empty(t("startStudent"), t("startStudentText")));
     return;
   }
   for (const s of students) {
     const row = node("div", undefined, "student-row");
     const info = person(s);
     info.append(
-      node("span", `${number(s.monthly_fee)} за месяц`, "person-detail"),
+      node(
+        "span",
+        t("perMonth", { amount: number(s.monthly_fee) }),
+        "person-detail",
+      ),
     );
     const actions = node("div", undefined, "student-actions");
     actions.append(
-      button("История оплат", () => history(s)),
-      button("Изменить", () => editStudent(s)),
+      button(t("history"), () => history(s)),
+      button(t("edit"), () => editStudent(s)),
       button(
-        "Удалить",
+        t("delete"),
         () => {
           deleteId = s.id;
           $("delete-description").textContent = s.name;
@@ -108,49 +138,55 @@ function renderStudents() {
   }
 }
 function renderDebtors(report) {
-  const [whole, fraction] = number(report.total_debt).split(",");
+  const parts = new Intl.NumberFormat(window.i18n.locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).formatToParts(report.total_debt);
+  const whole = parts
+    .filter((p) => p.type !== "decimal" && p.type !== "fraction")
+    .map((p) => p.value)
+    .join("");
+  const minor = parts
+    .filter((p) => p.type === "decimal" || p.type === "fraction")
+    .map((p) => p.value)
+    .join("");
   $("total").replaceChildren(
     document.createTextNode(whole),
-    node("span", "," + fraction, "minor-amount"),
+    node("span", minor, "minor-amount"),
   );
   $("debt-count").textContent = report.debtors.length;
   const count = report.debtors.length;
-  $("debt-count-label").textContent =
-    count % 10 === 1 && count % 100 !== 11
-      ? "ученик"
-      : count % 10 >= 2 &&
-          count % 10 <= 4 &&
-          !(count % 100 >= 12 && count % 100 <= 14)
-        ? "ученика"
-        : "учеников";
+  const plural = new Intl.PluralRules(window.i18n.locale).select(count);
+  $("debt-count-label").textContent = t(
+    plural === "one"
+      ? "studentOne"
+      : plural === "few"
+        ? "studentFew"
+        : "studentMany",
+  );
   const list = $("debt-list");
   list.replaceChildren();
   if (!students.length) {
-    list.append(
-      empty(
-        "Ведомость пока пуста",
-        "Добавьте первого ученика, чтобы начать учёт.",
-      ),
-    );
+    list.append(empty(t("emptyLedger"), t("emptyLedgerText")));
     return;
   }
   if (!report.debtors.length) {
-    list.append(empty("Всё оплачено", "За выбранный месяц задолженности нет."));
+    list.append(empty(t("allPaid"), t("allPaidText")));
     return;
   }
   const head = node("div", undefined, "table-head");
-  ["Ученик / Группа", "Оплачено", "Осталось", ""].forEach((t) =>
+  [t("studentGroup"), t("paid"), t("remaining"), ""].forEach((t) =>
     head.append(node("span", t)),
   );
   list.append(head);
   for (const s of report.debtors) {
     const row = node("div", undefined, "debtor-row");
     const paid = node("div", number(s.paid), "amount");
-    paid.setAttribute("data-label", "Внесено");
+    paid.setAttribute("data-label", t("paid"));
     const debt = node("div", number(s.debt), "amount debt");
-    debt.setAttribute("data-label", "Осталось");
+    debt.setAttribute("data-label", t("remaining"));
     const pay = button(
-      "Внести",
+      t("pay"),
       () => {
         $("pay-student").value = s.id;
         $("pay-amount").value = s.debt;
@@ -159,7 +195,7 @@ function renderDebtors(report) {
       },
       "pay-button",
     );
-    pay.setAttribute("aria-label", `Внести оплату: ${s.name}`);
+    pay.setAttribute("aria-label", t("payFor", { name: s.name }));
     const identity = node("div", undefined, "debtor-person");
     identity.append(
       node("div", s.name, "debtor-name"),
@@ -170,6 +206,7 @@ function renderDebtors(report) {
   }
 }
 async function refresh() {
+  monthLabel();
   const ticket = ++generation;
   const month = $("month").value;
   if (!month) return;
@@ -182,24 +219,25 @@ async function refresh() {
     if (ticket !== generation) return;
     students = all;
     renderStudents();
+    lastReport = report;
     renderDebtors(report);
   } catch (e) {
     if (ticket !== generation) return;
+    lastReport = null;
     $("global-error").replaceChildren(
       node("span", e.message + " "),
-      button("Повторить", refresh),
+      button(t("retry"), refresh),
     );
     $("global-error").hidden = false;
     $("total").textContent = "—";
     $("debt-count").textContent = "—";
-    $("debt-count-label").textContent = "Нет данных";
-    $("debt-list").replaceChildren(
-      empty(
-        "Не удалось загрузить ведомость",
-        "Проверьте соединение с сервером и повторите запрос.",
-      ),
-    );
+    $("debt-count-label").textContent = t("noData");
+    $("debt-list").replaceChildren(empty(t("loadError"), t("loadErrorText")));
   }
+}
+function monthLabel() {
+  const value = $("month").value;
+  if (value) $("month-display").textContent = window.i18n.formatMonth(value);
 }
 $("month").addEventListener("change", refresh);
 function moveMonth(offset) {
@@ -224,7 +262,8 @@ for (const [tab, other, view, otherView] of [
   ["students-tab", "debts-tab", "students-view", "debts-view"],
 ])
   $(tab).onclick = () => {
-    $("page-title").textContent = tab === "debts-tab" ? "Оплаты" : "Ученики";
+    $("page-title").textContent =
+      tab === "debts-tab" ? t("apiPayments") : t("apiStudents");
     document
       .querySelector("main")
       .classList.toggle("students-mode", tab === "students-tab");
@@ -236,7 +275,7 @@ for (const [tab, other, view, otherView] of [
 function editStudent(s = null) {
   $("student-form").reset();
   $("student-id").value = s?.id ?? "";
-  $("student-title").textContent = s ? "Изменить ученика" : "Новый ученик";
+  $("student-title").textContent = s ? t("editStudent") : t("newStudent");
   for (const [field, key] of [
     ["name", "name"],
     ["phone", "phone"],
@@ -261,7 +300,7 @@ $("student-form").onsubmit = async (event) => {
     monthly_fee: $("student-fee").value,
   };
   $("save-student").disabled = true;
-  message("student-message", "Сохраняем…");
+  message("student-message", t("saving"));
   try {
     await request("/students" + (id ? "/" + id : ""), {
       method: id ? "PUT" : "POST",
@@ -277,8 +316,10 @@ $("student-form").onsubmit = async (event) => {
 };
 $("payment-form").onsubmit = async (event) => {
   event.preventDefault();
+  if (paymentPending) return;
+  paymentPending = true;
   $("save-payment").disabled = true;
-  message("payment-message", "Сохраняем…");
+  message("payment-message", t("saving"));
   try {
     const payload = {
       student_id: Number($("pay-student").value),
@@ -290,29 +331,34 @@ $("payment-form").onsubmit = async (event) => {
       body: JSON.stringify(payload),
     });
     $("pay-amount").value = "";
-    message("payment-message", "Оплата сохранена.");
+    message("payment-message", t("paymentSaved"));
     await refresh();
   } catch (e) {
     message("payment-message", e.message, true);
   } finally {
+    paymentPending = false;
     $("save-payment").disabled = !students.length;
   }
 };
 async function history(s) {
-  $("history-title").textContent = "Оплаты: " + s.name;
-  $("history-list").textContent = "Загружаем…";
+  historyStudent = s;
+  $("history-title").textContent = t("historyFor", { name: s.name });
+  $("history-list").textContent = t("loading");
   $("history-dialog").showModal();
   try {
     const rows = await request(`/students/${s.id}/payments`);
     $("history-list").replaceChildren();
     if (!rows.length)
-      $("history-list").append(
-        empty("Пока без оплат", "Новые записи появятся здесь."),
-      );
+      $("history-list").append(empty(t("noPayments"), t("noPaymentsText")));
     for (const p of rows) {
       const row = node("div", undefined, "history-row");
       row.append(
-        node("span", p.date.split("-").reverse().join(".")),
+        node(
+          "span",
+          new Intl.DateTimeFormat(window.i18n.locale).format(
+            new Date(p.date + "T12:00:00"),
+          ),
+        ),
         node("strong", number(p.amount)),
       );
       $("history-list").append(row);
@@ -335,24 +381,15 @@ $("confirm-delete").onclick = async () => {
 };
 refresh();
 
-function syncThemeButton() {
-  const light = document.documentElement.dataset.theme === "light";
-  $("theme-toggle").setAttribute(
-    "aria-label",
-    light ? "Включить тёмную тему" : "Включить светлую тему",
+window.addEventListener("languagechange", () => {
+  renderStudents();
+  if (lastReport) renderDebtors(lastReport);
+  monthLabel();
+  $("page-title").textContent = t(
+    $("students-view").hidden ? "payments" : "students",
   );
-  $("theme-label").textContent = light ? "Тёмная тема" : "Светлая тема";
-  $("theme-icon").src = light
-    ? "/static/icons/moon.svg"
-    : "/static/icons/sun.svg";
-}
-$("theme-toggle").onclick = () => {
-  const theme =
-    document.documentElement.dataset.theme === "light" ? "dark" : "light";
-  document.documentElement.dataset.theme = theme;
-  try {
-    localStorage.setItem("vedomost-theme", theme);
-  } catch {}
-  syncThemeButton();
-};
-syncThemeButton();
+  $("student-title").textContent = t(
+    $("student-id").value ? "editStudent" : "newStudent",
+  );
+  if ($("history-dialog").open && historyStudent) history(historyStudent);
+});

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Ведомость</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/theme.js"></script>
+    <script src="/static/translations.js" defer></script>
+    <script src="/static/i18n.js" defer></script>
+    <script src="/static/legal-content.js" defer></script>
+    <script src="/static/document.js" defer></script>
+  </head>
+  <body class="document-page" data-document="docs">
+    <aside class="sidebar">
+      <a class="brand" href="/"
+        ><span data-i18n="brand"></span><span class="brand-dot">.</span></a
+      >
+      <nav
+        class="document-nav"
+        aria-label="Documents"
+        data-i18n-aria="sections"
+      >
+        <a href="/" data-i18n="home"></a
+        ><a href="/privacy" data-i18n="privacy"></a
+        ><a href="/terms" data-i18n="terms"></a
+        ><a href="/rights" data-i18n="rights"></a
+        ><a href="/docs" data-i18n="apiDocs"></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <label class="language-control"
+          ><span class="sr-only" data-i18n="language"></span
+          ><select id="language">
+            <option value="ru">Русский</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="en">English</option>
+          </select></label
+        ><button id="theme-toggle">
+          <img id="theme-icon" src="/static/icons/sun.svg" alt="" /><span
+            id="theme-label"
+          ></span>
+        </button>
+      </div>
+    </aside>
+    <main class="document-main">
+      <header>
+        <p class="context" id="document-region"></p>
+        <h1 id="document-title"></h1>
+        <p class="document-updated" id="document-updated"></p>
+      </header>
+      <article id="document-content"></article>
+      <footer>
+        <span data-i18n="copyright"></span>
+        <nav class="footer-links">
+          <a href="/privacy" data-i18n="privacy"></a
+          ><a href="/terms" data-i18n="terms"></a
+          ><a href="/rights" data-i18n="rights"></a
+          ><a href="/docs" data-i18n="apiDocs"></a>
+        </nav>
+      </footer>
+    </main>
+  </body>
+</html>

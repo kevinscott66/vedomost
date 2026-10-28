@@ -146,7 +146,7 @@ select:focus-visible {
 .tabs button[aria-pressed="true"] img {
   opacity: 1;
 }
-.tabs span {
+.tabs #student-count {
   margin-left: auto;
   border-radius: 7px;
   background: var(--line);
@@ -825,7 +825,7 @@ form label + label {
   .tabs button[aria-pressed="true"] {
     border-bottom-color: var(--accent);
   }
-  .tabs span {
+  .tabs #student-count {
     min-width: 20px;
     height: 20px;
     font-size: 10px;
@@ -1079,4 +1079,228 @@ main.students-mode {
   .table-head {
     font-size: 11px;
   }
+}
+.language-control select {
+  min-height: 40px;
+  font-size: 11px;
+  padding: 8px 10px;
+  background: var(--input);
+}
+.month-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  width: 155px;
+}
+.month-label input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.month-label:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.month-display {
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+footer {
+  flex-wrap: wrap;
+  line-height: 1.7;
+}
+.document-page .document-main {
+  margin-left: 210px;
+  padding: 40px 5vw 0;
+  max-width: 1200px;
+}
+.document-main header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.document-main h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.2;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+.document-updated {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 18px 0 0;
+}
+.document-main article {
+  max-width: 780px;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.document-main section {
+  padding: 25px 0;
+  border-bottom: 1px solid var(--line);
+}
+.document-main h2 {
+  font-size: 20px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.document-main p {
+  margin: 10px 0 0;
+}
+.document-main a {
+  color: var(--accent);
+  text-underline-offset: 4px;
+  overflow-wrap: anywhere;
+}
+.document-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 12px;
+}
+.document-nav a {
+  display: block;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-decoration: none;
+  border-radius: 6px;
+}
+.document-nav a[aria-current="page"],
+.document-nav a:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.document-resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px 22px;
+  padding: 25px 0;
+  font-size: 12px;
+}
+.document-main pre {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow: auto;
+  max-width: 100%;
+}
+@media (max-width: 1150px) {
+  .month-label {
+    width: 130px;
+  }
+  .document-page .document-main {
+    margin-left: 176px;
+  }
+}
+@media (max-width: 700px) {
+  .sidebar {
+    grid-template-columns: 1fr;
+    position: relative;
+  }
+  .brand {
+    padding-right: 98px;
+  }
+  .sidebar-bottom {
+    display: contents;
+  }
+  .sidebar-bottom #new-student {
+    position: absolute;
+    top: 20px;
+    right: 72px;
+  }
+  .sidebar-bottom #theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+  }
+  .language-control {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 8px 0 14px;
+    width: 100%;
+  }
+  .language-control select {
+    min-height: 44px;
+  }
+  .tabs {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .month-label {
+    width: auto;
+  }
+  .month-display {
+    font-size: 13px;
+  }
+  .document-page .document-main {
+    margin: 0;
+    padding: 26px 20px 0;
+  }
+  .document-page .brand {
+    padding-right: 48px;
+  }
+  .document-nav {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0;
+    margin-top: 20px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .document-nav a {
+    padding: 10px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+  .document-main article {
+    font-size: 13px;
+  }
+  .document-main h2 {
+    font-size: 18px;
+  }
+  .document-main h1 {
+    font-size: 30px;
+  }
+}
+textarea {
+  display: block;
+  width: 100%;
+  background: var(--input);
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  color: var(--text);
+  font: 12px/1.7 monospace;
+  padding: 12px;
+  resize: vertical;
+  margin-top: 8px;
+}
+textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.api-console form {
+  max-width: 580px;
+}
+.api-console select {
+  margin-top: 8px;
+}
+.api-console pre {
+  min-height: 70px;
 }

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
@@ -135,7 +135,13 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
             """)
         yield
 
-    api = FastAPI(title="Учёт оплат учебного центра", version="1.0.0", lifespan=lifespan)
+    api = FastAPI(
+        title="Учёт оплат учебного центра",
+        version="1.0.0",
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+    )
     api.mount("/static", StaticFiles(directory=STATIC), name="static")
 
     def require_student(db, student_id: int):
@@ -147,6 +153,34 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
     @api.get("/", include_in_schema=False)
     def index():
         return FileResponse(STATIC / "index.html")
+
+    @api.get("/privacy", include_in_schema=False)
+    def privacy():
+        return FileResponse(STATIC / "privacy.html")
+
+    @api.get("/terms", include_in_schema=False)
+    def terms():
+        return FileResponse(STATIC / "terms.html")
+
+    @api.get("/rights", include_in_schema=False)
+    def rights():
+        return FileResponse(STATIC / "rights.html")
+
+    @api.get("/docs", include_in_schema=False)
+    def documentation():
+        return FileResponse(STATIC / "docs.html")
+
+    @api.get("/redoc", include_in_schema=False)
+    def redoc():
+        return RedirectResponse("/docs")
+
+    @api.get("/license.txt", include_in_schema=False)
+    def license_text():
+        return FileResponse(ROOT / "LICENSE.txt", media_type="text/plain; charset=utf-8")
+
+    @api.get("/third-party-notices.txt", include_in_schema=False)
+    def third_party_notices():
+        return FileResponse(ROOT / "THIRD_PARTY_NOTICES.md", media_type="text/plain; charset=utf-8")
 
     @api.get("/students", response_model=list[Student])
     def students():

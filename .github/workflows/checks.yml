@@ -16,3 +16,4 @@ jobs:
       - run: python -m ruff format --check app tests
       - run: python -m pytest -q
       - run: node --check app/static/app.js
+      - run: node --test tests/i18n.test.cjs

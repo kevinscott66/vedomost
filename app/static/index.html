@@ -6,28 +6,51 @@
     <title>Ведомость — оплаты учебного центра</title>
     <link rel="stylesheet" href="/static/style.css" />
     <script src="/static/theme.js"></script>
+    <script src="/static/translations.js" defer></script>
+    <script src="/static/i18n.js" defer></script>
     <script src="/static/app.js" defer></script>
   </head>
   <body>
     <aside class="sidebar">
-      <a class="brand" href="/" aria-label="Ведомость, главная"
-        >ведомость<span class="brand-dot">.</span></a
+      <a
+        class="brand"
+        href="/"
+        aria-label="Ведомость, главная"
+        data-i18n-aria="home"
+        ><span data-i18n="brand">ведомость</span
+        ><span class="brand-dot">.</span></a
       >
-      <nav class="tabs" aria-label="Разделы">
+      <nav class="tabs" aria-label="Разделы" data-i18n-aria="sections">
         <button id="debts-tab" aria-pressed="true">
-          <img
-            src="/static/icons/receipt-text.svg"
-            alt=""
-          />Задолженность</button
+          <img src="/static/icons/receipt-text.svg" alt="" /><span
+            data-i18n="debtors"
+            >Задолженность</span
+          ></button
         ><button id="students-tab" aria-pressed="false">
-          <img src="/static/icons/users.svg" alt="" />Ученики
-          <span id="student-count">0</span>
+          <img src="/static/icons/users.svg" alt="" /><span data-i18n="students"
+            >Ученики</span
+          ><span id="student-count">0</span>
         </button>
       </nav>
       <div class="sidebar-bottom">
+        <label class="language-control"
+          ><span class="sr-only" data-i18n="language">Язык</span
+          ><select id="language">
+            <option value="ru">Русский</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="en">English</option>
+          </select></label
+        >
         <button id="new-student">
-          <img src="/static/icons/circle-plus.svg" alt="" />Добавить ученика</button
-        ><button id="theme-toggle" aria-label="Включить светлую тему">
+          <img src="/static/icons/circle-plus.svg" alt="" /><span
+            data-i18n="addStudent"
+            >Добавить ученика</span
+          ></button
+        ><button
+          id="theme-toggle"
+          aria-label="Включить светлую тему"
+          data-i18n-aria="enableLight"
+        >
           <img id="theme-icon" src="/static/icons/sun.svg" alt="" /><span
             id="theme-label"
             >Светлая тема</span
@@ -37,21 +60,31 @@
     </aside>
     <main>
       <header class="page-header">
-        <p class="context">Учебный центр</p>
+        <p class="context"><span data-i18n="context">Учебный центр</span></p>
         <div class="heading-row">
-          <h1 id="page-title">Оплаты</h1>
+          <h1 id="page-title"><span data-i18n="payments">Оплаты</span></h1>
           <div class="period">
-            <button id="previous-month" aria-label="Предыдущий месяц">
+            <button
+              id="previous-month"
+              aria-label="Предыдущий месяц"
+              data-i18n-aria="previousMonth"
+            >
               <img src="/static/icons/chevron-left.svg" alt="" /></button
             ><label class="month-label"
-              ><span class="sr-only">Расчётный месяц</span
+              ><span class="sr-only"
+                ><span data-i18n="month">Расчётный месяц</span></span
+              ><span id="month-display" class="month-display"></span
               ><input
                 id="month"
                 type="month"
                 required
                 min="0001-01"
                 max="9999-11" /></label
-            ><button id="next-month" aria-label="Следующий месяц">
+            ><button
+              id="next-month"
+              aria-label="Следующий месяц"
+              data-i18n-aria="nextMonth"
+            >
               <img src="/static/icons/chevron-right.svg" alt="" />
             </button>
           </div>
@@ -60,32 +93,47 @@
       <div id="global-error" role="alert" hidden></div>
       <section id="debts-view">
         <div class="summary">
-          <div id="total" class="total" aria-label="Общая задолженность">—</div>
+          <div
+            id="total"
+            class="total"
+            aria-label="Общая задолженность"
+            data-i18n-aria="totalDebt"
+          >
+            —
+          </div>
           <div class="summary-caption">
-            <span>Задолженность</span><span aria-hidden="true">·</span
+            <span><span data-i18n="debtors">Задолженность</span></span
+            ><span aria-hidden="true">·</span
             ><span
               ><span id="debt-count">—</span>
-              <span id="debt-count-label">учеников</span></span
+              <span id="debt-count-label"
+                ><span data-i18n="studentMany">учеников</span></span
+              ></span
             >
           </div>
         </div>
         <div class="workspace">
-          <section class="ledger" aria-label="Список должников">
+          <section
+            class="ledger"
+            aria-label="Список должников"
+            data-i18n-aria="debtorList"
+          >
             <div id="debt-list" aria-live="polite"></div>
-            <p class="footnote">
-              Учёт за календарный месяц. Переплата на другие месяцы не
-              переносится.
-            </p>
+            <p class="footnote" data-i18n="monthNote"></p>
           </section>
           <aside class="payment-panel">
-            <h2>Добавить оплату</h2>
+            <h2><span data-i18n="addPayment">Добавить оплату</span></h2>
             <form id="payment-form">
               <label
-                >Ученик<select id="pay-student" required>
-                  <option value="">Выберите ученика</option>
+                ><span data-i18n="student">Ученик</span
+                ><select id="pay-student" required>
+                  <option value="">
+                    <span data-i18n="chooseStudent">Выберите ученика</span>
+                  </option>
                 </select></label
               ><label
-                >Сумма<input
+                ><span data-i18n="amount">Сумма</span
+                ><input
                   id="pay-amount"
                   type="number"
                   inputmode="decimal"
@@ -93,51 +141,70 @@
                   max="9999999999.99"
                   step="0.01"
                   placeholder="Введите сумму"
+                  data-i18n-placeholder="amountPlaceholder"
                   required /></label
-              ><label>Дата<input id="pay-date" type="date" required /></label>
+              ><label
+                ><span data-i18n="date">Дата</span
+                ><input id="pay-date" type="date" required
+              /></label>
               <p id="payment-message" role="status" class="form-message"></p>
-              <button id="save-payment" class="primary">Сохранить</button>
+              <button id="save-payment" class="primary">
+                <span data-i18n="save">Сохранить</span>
+              </button>
             </form>
-            <p class="panel-note">
-              Запись полученной оплаты.<br />Деньги через приложение не
-              переводятся.
-            </p>
+            <p class="panel-note" data-i18n="paymentNote"></p>
           </aside>
         </div>
       </section>
       <section id="students-view" hidden>
         <div class="section-head">
-          <h2>Ученики центра</h2>
-          <span class="small">Текущий месячный тариф</span>
+          <h2><span data-i18n="studentsCentre">Ученики центра</span></h2>
+          <span class="small"
+            ><span data-i18n="currentFee">Текущий месячный тариф</span></span
+          >
         </div>
         <div id="students-list"></div>
       </section>
       <footer>
-        <span>© Александр Павлович · 2026</span
-        ><a href="/docs">Документация API</a>
+        <span data-i18n="copyright"></span>
+        <nav
+          class="footer-links"
+          aria-label="Документы"
+          data-i18n-aria="sections"
+        >
+          <a href="/privacy" data-i18n="privacy"></a
+          ><a href="/terms" data-i18n="terms"></a
+          ><a href="/rights" data-i18n="rights"></a
+          ><a href="/docs" data-i18n="apiDocs"></a>
+        </nav>
       </footer>
     </main>
     <dialog id="student-dialog">
       <form id="student-form">
         <div class="dialog-head">
-          <h2 id="student-title">Новый ученик</h2>
+          <h2 id="student-title">
+            <span data-i18n="newStudent">Новый ученик</span>
+          </h2>
           <button
             type="button"
             class="icon"
             id="close-student"
             aria-label="Закрыть"
+            data-i18n-aria="close"
           >
             ×
           </button>
         </div>
         <input id="student-id" type="hidden" /><label
-          >Имя<input
+          ><span data-i18n="name">Имя</span
+          ><input
             id="student-name"
             required
             maxlength="160"
             autocomplete="name" /></label
         ><label
-          >Телефон<input
+          ><span data-i18n="phone">Телефон</span
+          ><input
             id="student-phone"
             type="tel"
             required
@@ -145,13 +212,16 @@
             maxlength="40"
             autocomplete="tel" /></label
         ><label
-          >Группа<input
+          ><span data-i18n="group">Группа</span
+          ><input
             id="student-group"
             required
             maxlength="160"
-            placeholder="Например, Английский А2" /></label
+            placeholder="Например, Английский А2"
+            data-i18n-placeholder="groupPlaceholder" /></label
         ><label
-          >Оплата за месяц<input
+          ><span data-i18n="monthlyFee">Оплата за месяц</span
+          ><input
             id="student-fee"
             type="number"
             inputmode="decimal"
@@ -161,12 +231,16 @@
             required
         /></label>
         <p id="student-message" role="status" class="form-message"></p>
-        <button id="save-student" class="primary">Сохранить ученика</button>
+        <button id="save-student" class="primary">
+          <span data-i18n="saveStudent">Сохранить ученика</span>
+        </button>
       </form>
     </dialog>
     <dialog id="history-dialog">
       <div class="dialog-head">
-        <h2 id="history-title">История оплат</h2>
+        <h2 id="history-title">
+          <span data-i18n="history">История оплат</span>
+        </h2>
         <button class="icon" id="close-history" aria-label="Закрыть историю">
           ×
         </button>
@@ -174,15 +248,16 @@
       <div id="history-list"></div>
     </dialog>
     <dialog id="delete-dialog">
-      <h2>Удалить ученика?</h2>
+      <h2><span data-i18n="deleteStudent">Удалить ученика?</span></h2>
       <p id="delete-description"></p>
-      <p class="muted">
-        Ученика с оплатами удалить нельзя: история сохраняется.
-      </p>
+      <p class="muted" data-i18n="deleteWarning"></p>
       <p id="delete-message" role="status"></p>
       <div class="dialog-actions">
-        <button id="cancel-delete" class="outline">Отмена</button
-        ><button id="confirm-delete" class="danger">Удалить</button>
+        <button id="cancel-delete" class="outline">
+          <span data-i18n="cancel">Отмена</span></button
+        ><button id="confirm-delete" class="danger">
+          <span data-i18n="delete">Удалить</span>
+        </button>
       </div>
     </dialog>
   </body>
