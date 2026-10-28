@@ -85,3 +85,9 @@
 ## Multicurrency payment booking — 28 October 2026
 
 50 pytest tests and22 Node tests pass; Ruff lint/format and diff checks pass. Added coverage for original currency retention, mixed debt aggregation, half-up conversion, unavailable rates, idempotent replay after rate changes, range checks and legacy schema migration. Browser QA used a separate database copy:2USD saved as23723.91UZS at the official quote; history retained2USD and the frozen booked amount. Main database migration retained all5existing payments, dates, amounts and idempotency records; integrity_check=ok, foreign_key_check empty. Mobile viewport375px had no horizontal overflow. Screenshots: [form](multicurrency-form.png), [history in QA copy](multicurrency-history.png). Tariffs remain UZS. Historical verification sections describe earlier versions.
+
+## Payment and FX logic recheck — 28 October 2026
+
+Added a mixed ledger test:1000UZS+10RUB at150+2USD at12000 books26500UZS against a50000UZS fee, leaving23500UZS. Changing live quotes, reading /exchange-rates and restarting the application preserve the full payment history and base debt. A later payment uses the new rate; overpayment produces no negative debt and does not carry into the next month. An exact half-cent conversion rounds up (0.01RUB×150.5=1.51UZS). A browser unit test confirms that display conversion changes with the quote while the original amount and booked base remain intact.
+
+Found and fixed an extreme-value failure: individually valid foreign conversions could together overflow SQLite SUM. The payment transaction now checks the student/month combined total using Python integers before insertion, under the same write lock. Over-limit writes return422 without changing history; the report remains available. Existing ordinary and idempotent behavior is covered by the suite. This review does not change enrollment, tariff-history or carry-forward rules.

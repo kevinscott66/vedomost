@@ -252,3 +252,94 @@ def test_demo_does_not_duplicate_or_overwrite(tmp_path):
     with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
         assert len(c.get("/students").json()) == 4
         assert len(report(c, date.today().strftime("%Y-%m"))["debtors"]) == 3
+
+
+def test_mixed_currencies_keep_booked_debt_after_rate_change_and_restart(tmp_path, monkeypatch):
+    path = tmp_path / "mixed.sqlite3"
+    quote = {
+        "status": "fresh",
+        "source": "CBU",
+        "rate_date": "2026-10-28",
+        "rates": {"UZS": 1, "RUB": 150, "USD": 12000},
+    }
+    monkeypatch.setattr("app.main.ExchangeRateService.get", lambda _self: quote)
+    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+        s = student(c, "50000")
+        for amount, currency in [("1000", "UZS"), ("10", "RUB"), ("2", "USD")]:
+            r = c.post(
+                "/payments",
+                json={
+                    "student_id": s["id"],
+                    "amount": amount,
+                    "currency": currency,
+                    "date": "2026-10-10",
+                },
+            )
+            assert r.status_code == 201, r.text
+        history = c.get(f"/students/{s['id']}/payments").json()
+        assert report(c)["total_debt"] == "23500.00"
+        assert report(c)["debtors"][0]["paid"] == "26500.00"
+        quote["rates"] = {"UZS": 1, "RUB": 200, "USD": 14000}
+        assert c.get("/exchange-rates").json()["rates"]["USD"] == 14000
+        assert c.get(f"/students/{s['id']}/payments").json() == history
+        assert report(c)["total_debt"] == "23500.00"
+        assert report(c, "2026-11")["total_debt"] == "50000.00"
+    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
+        assert c.get(f"/students/{s['id']}/payments").json() == history
+        assert report(c)["total_debt"] == "23500.00"
+        assert (
+            c.post(
+                "/payments",
+                json={
+                    "student_id": s["id"],
+                    "amount": "2",
+                    "currency": "USD",
+                    "date": "2026-10-11",
+                },
+            ).status_code
+            == 201
+        )
+        assert report(c)["total_debt"] == "0.00"  # Overpayment never becomes negative debt.
+
+
+def test_monthly_combined_conversion_cannot_overflow_sqlite(client, monkeypatch):
+    monkeypatch.setattr(
+        "app.main.ExchangeRateService.get",
+        lambda _self: {
+            "status": "fresh",
+            "source": "CBU",
+            "rate_date": "2026-10-28",
+            "rates": {"UZS": 1, "RUB": 1, "USD": 9000000},
+        },
+    )
+    s = student(client)
+    payload = {
+        "student_id": s["id"],
+        "amount": "9999999999.99",
+        "currency": "USD",
+        "date": "2026-10-28",
+    }
+    assert client.post("/payments", json=payload).status_code == 201
+    assert client.post("/payments", json=payload).status_code == 422
+    assert report(client)["total_debt"] == "0.00"
+    assert len(client.get(f"/students/{s['id']}/payments").json()) == 1
+
+
+def test_conversion_rounds_exact_half_cent_up(client, monkeypatch):
+    monkeypatch.setattr(
+        "app.main.ExchangeRateService.get",
+        lambda _self: {
+            "status": "fresh",
+            "source": "CBU",
+            "rate_date": "2026-10-28",
+            "rates": {"UZS": 1, "RUB": 150.5, "USD": 12000},
+        },
+    )
+    s = student(client, "2")
+    result = client.post(
+        "/payments",
+        json={"student_id": s["id"], "amount": "0.01", "currency": "RUB", "date": "2026-10-28"},
+    )
+    assert result.status_code == 201
+    assert result.json()["base_amount"] == "1.51"
+    assert report(client)["total_debt"] == "0.49"

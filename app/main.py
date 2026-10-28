@@ -328,6 +328,19 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
             existing = require_student(db, payment.student_id)
             if payment.date.isoformat()[:7] < existing["start_month"]:
                 raise HTTPException(422, "Дата оплаты раньше начала обучения")
+            month_start, month_end = month_bounds(payment.date.isoformat()[:7])
+            # A valid individual conversion can still overflow SQLite SUM when combined.
+            # Check under the same write lock; Python integers do not overflow.
+            month_paid = sum(
+                row[0]
+                for row in db.execute(
+                    "SELECT amount_cents FROM payments WHERE student_id = ? "
+                    "AND paid_on >= ? AND (? IS NULL OR paid_on < ?)",
+                    (payment.student_id, month_start, month_end, month_end),
+                )
+            )
+            if month_paid + base_cents > MAX_ID:
+                raise HTTPException(422, "Monthly payment total exceeds storage limit")
             cursor = db.execute(
                 "INSERT INTO payments(student_id, amount_cents, paid_on, original_amount_cents, "
                 "currency, exchange_rate, rate_date, rate_source) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",

@@ -200,3 +200,15 @@ test("saved currency is allowlisted", () => {
   assert.equal(runtime("__proto__").currency.code, "UZS");
   assert.equal(runtime("USD").currency.code, "USD");
 });
+
+test("refresh changes the display quote without mutating booked payment values", async () => {
+  let quote = valid;
+  const env = runtime("USD", async () => ({ ok: true, json: async () => quote }));
+  await new Promise((resolve) => setImmediate(resolve));
+  const booked = Object.freeze({ amount: "2.00", currency: "USD", base_amount: "24000.00" });
+  assert.equal(env.currency.convert(booked.base_amount), 2);
+  quote = { ...valid, rates: { UZS: 1, RUB: 200, USD: 16000 } };
+  await env.currency.refresh();
+  assert.equal(env.currency.convert(booked.base_amount), 1.5);
+  assert.deepEqual(booked, { amount: "2.00", currency: "USD", base_amount: "24000.00" });
+});
