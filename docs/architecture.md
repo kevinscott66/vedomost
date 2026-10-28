@@ -1,5 +1,7 @@
 # Архитектура и дизайн
 
+Приложение имеет локальную версию на SQLite и публичное демо на Cloudflare Workers/D1. Устройство, ограничения и проверка публичного адаптера описаны в [cloud-deployment.md](cloud-deployment.md). Ниже описана локальная версия и общий интерфейс.
+
 FastAPI обслуживает JSON API и статические HTML/CSS/JS с одного origin. SQLite создаётся в lifespan приложения; запросы параметризованы, внешние ключи включены для каждого соединения. Запись выполняется в транзакции. Денежные расчёты проходят на сервере через Decimal и целые сотые доли. Клиент только отображает результаты API.
 
 Таблицы: students(id, name, phone, group_name, monthly_fee_cents, start_month); payments(id, student_id, original_amount_cents, currency, amount_cents, exchange_rate, rate_date, rate_source, paid_on). Платёж хранит исходные сумму и валюту вместе с неизменяемым эквивалентом в UZS и данными курса. Связь payments.student_id → students.id с ON DELETE RESTRICT. Индекс payments(student_id, paid_on). Список должников суммирует `amount_cents` (эквивалент UZS) в полуоткрытом интервале [первое число месяца, первое число следующего месяца), GROUP BY ученику, HAVING сумма < тарифу в UZS.
