@@ -37,7 +37,7 @@ def test_no_infinite_historical_charges_and_backdating(client):
         assert r.json()["total_debt"] == "0.00"
     assert client.get("/debtors?month=2026-09").json()["total_debt"] == "800000.00"
     payload = {"student_id": s["id"], "amount": "300000", "date": "2026-09-15"}
-    headers = {"Idempotency-Key": "historical-key-123456"}
+    headers = {"Idempotency-Key": "0" * 32}
     assert client.post("/payments", json=payload, headers=headers).status_code == 201
     assert client.post("/payments", json=payload, headers=headers).status_code == 201
     assert client.get("/debtors?month=2026-09").json()["total_debt"] == "500000.00"
