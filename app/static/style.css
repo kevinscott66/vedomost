@@ -1338,3 +1338,38 @@ textarea:focus-visible {
     font-size: 12px;
   }
 }
+
+.display-settings {
+  display: grid;
+  gap: 8px;
+}
+.currency-control select {
+  min-height: 40px;
+  font-size: 11px;
+  padding: 8px 10px;
+  background: var(--input);
+}
+.currency-note {
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-top: 12px;
+  max-width: 440px;
+}
+@media (max-width: 700px) {
+  .display-settings {
+    grid-row: 3;
+    grid-column: 1;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 8px 0 14px;
+  }
+  .display-settings .language-control {
+    grid-row: auto;
+    grid-column: auto;
+    margin: 0;
+  }
+  .currency-control select {
+    min-height: 44px;
+  }
+}

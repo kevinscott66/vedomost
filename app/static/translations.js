@@ -27,6 +27,8 @@ window.VEDOMOST_TRANSLATIONS = {
     addPayment: "Добавить оплату",
     student: "Ученик",
     chooseStudent: "Выберите ученика",
+    displayCurrency: "Валюта отображения",
+    currencyNote: "Учёт и ввод — UZS. Пересчёт справочный. {rate}",
     currencyUnit: "сум",
     amount: "Сумма, сум",
     amountPlaceholder: "Введите сумму",
@@ -102,7 +104,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Коды ответов",
     apiRules: "Расчёты и ограничения",
     apiRuleText:
-      "В этой демоверсии используется узбекский сум (UZS). Смена языка не меняет валюту, конвертации нет. Денежные значения передаются строками с двумя знаками после запятой. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
+      "В этой демоверсии используется узбекский сум (UZS). Язык и валюта отображения выбираются отдельно. RUB/USD — справочный пересчёт по снимку курса от 28.10.2026; API и ввод остаются в UZS. Денежные значения передаются строками с двумя знаками после запятой. Частичные платежи складываются за календарный месяц. Переплата не переносится. Для удаления ученика с оплатами возвращается 409.",
     apiStudentsText:
       "POST /students — создать; GET /students — список; GET /students/{id} — получить; PUT /students/{id} — заменить все поля; DELETE /students/{id} — удалить ученика без оплат.",
     apiPaymentsText:
@@ -153,6 +155,9 @@ window.VEDOMOST_TRANSLATIONS = {
     addPayment: "Add payment",
     student: "Student",
     chooseStudent: "Select a student",
+    displayCurrency: "Display currency",
+    currencyNote:
+      "Records and inputs use UZS. Conversion is indicative. {rate}",
     currencyUnit: "UZS",
     amount: "Amount, UZS",
     amountPlaceholder: "Enter amount",
@@ -228,7 +233,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Response codes",
     apiRules: "Calculation rules and limits",
     apiRuleText:
-      "This demo uses the Uzbek sum (UZS). Changing the language does not change currency; there is no conversion. Money is represented by decimal strings with two fractional digits. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
+      "This demo uses the Uzbek sum (UZS). Language and display currency are independent. RUB/USD use an indicative rate snapshot dated 28 October 2026; API and input amounts remain UZS. Money is represented by decimal strings with two fractional digits. Payments are summed per calendar month. Overpayments do not carry forward. Deleting a student with payments returns 409.",
     apiStudentsText:
       "POST /students — create; GET /students — list; GET /students/{id} — retrieve; PUT /students/{id} — replace all fields; DELETE /students/{id} — delete a student without payments.",
     apiPaymentsText:
@@ -279,6 +284,9 @@ window.VEDOMOST_TRANSLATIONS = {
     addPayment: "To‘lov qo‘shish",
     student: "O‘quvchi",
     chooseStudent: "O‘quvchini tanlang",
+    displayCurrency: "Ko‘rsatish valyutasi",
+    currencyNote:
+      "Hisob va kiritish — UZS. Konvertatsiya ma’lumot uchun. {rate}",
     currencyUnit: "so‘m",
     amount: "Summa, so‘m",
     amountPlaceholder: "Summani kiriting",
@@ -354,7 +362,7 @@ window.VEDOMOST_TRANSLATIONS = {
     apiErrors: "Javob kodlari",
     apiRules: "Hisoblash qoidalari va cheklovlar",
     apiRuleText:
-      "Bu demoda O‘zbekiston so‘mi (UZS) ishlatiladi. Tilni almashtirish valyutani o‘zgartirmaydi; konvertatsiya yo‘q. Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
+      "Bu demoda O‘zbekiston so‘mi (UZS) ishlatiladi. Til va ko‘rsatish valyutasi alohida tanlanadi. RUB/USD 28.10.2026 kursi bo‘yicha ma’lumot uchun hisoblanadi; API va kiritish UZSda qoladi. Pul qiymatlari kasrdan keyin ikki xonali matn sifatida uzatiladi. To‘lovlar kalendar oy bo‘yicha jamlanadi. Ortiqcha to‘lov boshqa oyga o‘tmaydi. To‘lovlari bor o‘quvchini o‘chirish 409 javobini qaytaradi.",
     apiStudentsText:
       "POST /students — yaratish; GET /students — ro‘yxat; GET /students/{id} — olish; PUT /students/{id} — barcha maydonlarni almashtirish; DELETE /students/{id} — to‘lovlari yo‘q o‘quvchini o‘chirish.",
     apiPaymentsText:

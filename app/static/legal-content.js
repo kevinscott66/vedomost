@@ -15,7 +15,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Cookies и настройки",
-        "Приложение не устанавливает cookies и не использует рекламные трекеры или аналитику. В localStorage браузера сохраняются только тема и язык: vedomost-theme и vedomost-language. Настройки можно удалить через средства браузера; при запрете хранилища приложение продолжает работать с настройками по умолчанию. Шрифты, иконки и документация загружаются с того же сервера. Внешние сайты открываются только по отдельным ссылкам и применяют собственные правила.",
+        "Приложение не устанавливает cookies и не использует рекламные трекеры или аналитику. В localStorage браузера сохраняются только тема, язык и валюта отображения: vedomost-theme, vedomost-language и vedomost-currency. Настройки можно удалить через средства браузера; при запрете хранилища приложение продолжает работать с настройками по умолчанию. Шрифты, иконки и документация загружаются с того же сервера. Внешние сайты открываются только по отдельным ссылкам и применяют собственные правила.",
       ],
       [
         "Защита и ограничения",
@@ -79,7 +79,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Cookies va sozlamalar",
-        "Ilova cookies o‘rnatmaydi, reklama kuzatuvchilari va tahlil xizmatlaridan foydalanmaydi. Brauzer localStorage xotirasida faqat mavzu va til — vedomost-theme hamda vedomost-language saqlanadi. Ularni brauzer sozlamalarida o‘chirish mumkin. Xotira bloklansa, ilova standart sozlamalar bilan ishlaydi. Shriftlar, belgilar va hujjatlar ayni serverdan yuklanadi. Tashqi havolalar orqali ochilgan saytlar o‘z qoidalariga ega.",
+        "Ilova cookies o‘rnatmaydi, reklama kuzatuvchilari va tahlil xizmatlaridan foydalanmaydi. Brauzer localStorage xotirasida faqat mavzu, til va ko‘rsatish valyutasi — vedomost-theme, vedomost-language hamda vedomost-currency saqlanadi. Ularni brauzer sozlamalarida o‘chirish mumkin. Xotira bloklansa, ilova standart sozlamalar bilan ishlaydi. Shriftlar, belgilar va hujjatlar ayni serverdan yuklanadi. Tashqi havolalar orqali ochilgan saytlar o‘z qoidalariga ega.",
       ],
       [
         "Himoya va cheklovlar",
@@ -143,7 +143,7 @@ window.VEDOMOST_LEGAL = {
       ],
       [
         "Cookies, preferences and recipients",
-        "The app sets no cookies and includes no advertising trackers or analytics. Browser localStorage holds only theme and language preferences under vedomost-theme and vedomost-language. You can remove them in browser settings; blocking storage does not prevent the app from working. Fonts, icons and documentation are served locally. The demo does not sell, share for behavioural advertising, or automatically send ledger records to external recipients. Linked third-party sites have their own policies.",
+        "The app sets no cookies and includes no advertising trackers or analytics. Browser localStorage holds only theme, language and display-currency preferences under vedomost-theme, vedomost-language and vedomost-currency. You can remove them in browser settings; blocking storage does not prevent the app from working. Fonts, icons and documentation are served locally. The demo does not sell, share for behavioural advertising, or automatically send ledger records to external recipients. Linked third-party sites have their own policies.",
       ],
       [
         "Security and children",

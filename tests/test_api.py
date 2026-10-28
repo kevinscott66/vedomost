@@ -9,7 +9,7 @@ from app.main import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(tmp_path / "ledger.sqlite3")) as c:
+    with TestClient(create_app(tmp_path / "ledger.sqlite3"), base_url="http://127.0.0.1") as c:
         yield c
 
 
@@ -123,10 +123,10 @@ def test_total_sort_and_current_tariff(client):
 
 def test_persistence_after_restart(tmp_path):
     path = tmp_path / "db.sqlite3"
-    with TestClient(create_app(path)) as c:
+    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
         s = student(c)
         pay(c, s["id"], "25")
-    with TestClient(create_app(path)) as c:
+    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
         assert len(c.get("/students").json()) == 1
         assert report(c)["total_debt"] == "975.00"
 
@@ -146,6 +146,6 @@ def test_demo_does_not_duplicate_or_overwrite(tmp_path):
     command = [sys.executable, "-m", "app.demo", "--database", str(path)]
     assert subprocess.run(command, capture_output=True).returncode == 0
     assert subprocess.run(command, capture_output=True).returncode != 0
-    with TestClient(create_app(path)) as c:
+    with TestClient(create_app(path), base_url="http://127.0.0.1") as c:
         assert len(c.get("/students").json()) == 4
         assert len(report(c, date.today().strftime("%Y-%m"))["debtors"]) == 3

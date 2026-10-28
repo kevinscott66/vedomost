@@ -1,21 +1,21 @@
 """Small, local payment ledger. Money is stored as integer minor units."""
 
-import os
 import re
 import sqlite3
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Query, Response
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import FastAPI, Header, HTTPException, Query, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-STATIC = Path(__file__).parent / "static"
-ROOT = Path(__file__).resolve().parent.parent
+from app.database import ROOT, STATIC, Database
+from app.security import LocalBoundaryMiddleware
+
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
 Phone = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=40)]
 Money = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2)]
@@ -99,40 +99,12 @@ def payment_dict(row: sqlite3.Row) -> dict:
 
 
 def create_app(database_path: str | Path | None = None) -> FastAPI:
-    path = Path(database_path or os.getenv("DATABASE_PATH", ROOT / "data" / "school.sqlite3"))
-
-    @contextmanager
-    def connect():
-        db = sqlite3.connect(path, timeout=10)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA foreign_keys = ON")
-        try:
-            with db:
-                yield db
-        finally:
-            db.close()
+    database = Database(database_path)
+    connect = database.connect
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with connect() as db:
-            db.executescript("""
-                CREATE TABLE IF NOT EXISTS students (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    phone TEXT NOT NULL,
-                    group_name TEXT NOT NULL,
-                    monthly_fee_cents INTEGER NOT NULL CHECK(monthly_fee_cents >= 0)
-                );
-                CREATE TABLE IF NOT EXISTS payments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE RESTRICT,
-                    amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
-                    paid_on TEXT NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS payments_student_date
-                    ON payments(student_id, paid_on);
-            """)
+        database.initialize()
         yield
 
     api = FastAPI(
@@ -142,6 +114,14 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         docs_url=None,
         redoc_url=None,
     )
+    api.add_middleware(LocalBoundaryMiddleware)
+
+    @api.exception_handler(sqlite3.OperationalError)
+    async def database_busy(_request, exc):
+        if "locked" in str(exc).lower() or "busy" in str(exc).lower():
+            return JSONResponse({"detail": "Database busy; retry later"}, status_code=503)
+        raise exc
+
     api.mount("/static", StaticFiles(directory=STATIC), name="static")
 
     def require_student(db, student_id: int):
@@ -190,7 +170,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
 
     @api.post("/students", response_model=Student, status_code=201)
     def add_student(student: StudentInput):
-        with connect() as db:
+        with connect(write=True) as db:
             cursor = db.execute(
                 "INSERT INTO students(name, phone, group_name, monthly_fee_cents) "
                 "VALUES(?, ?, ?, ?)",
@@ -205,7 +185,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
 
     @api.put("/students/{student_id}", response_model=Student)
     def update_student(student_id: int, student: StudentInput):
-        with connect() as db:
+        with connect(write=True) as db:
             require_student(db, student_id)
             db.execute(
                 "UPDATE students SET name=?, phone=?, group_name=?, monthly_fee_cents=? WHERE id=?",
@@ -221,7 +201,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
 
     @api.delete("/students/{student_id}", status_code=204)
     def delete_student(student_id: int):
-        with connect() as db:
+        with connect(write=True) as db:
             require_student(db, student_id)
             if db.execute(
                 "SELECT 1 FROM payments WHERE student_id = ? LIMIT 1", (student_id,)
@@ -233,13 +213,34 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         return Response(status_code=204)
 
     @api.post("/payments", response_model=Payment, status_code=201)
-    def add_payment(payment: PaymentInput):
-        with connect() as db:
+    def add_payment(
+        payment: PaymentInput,
+        idempotency_key: Annotated[str | None, Header(min_length=16, max_length=128)] = None,
+    ):
+        payload = f"{payment.student_id}|{minor_units(payment.amount)}|{payment.date.isoformat()}"
+        with connect(write=True) as db:
+            if idempotency_key:
+                prior = db.execute(
+                    "SELECT payload, payment_id FROM payment_requests WHERE request_key = ?",
+                    (idempotency_key,),
+                ).fetchone()
+                if prior:
+                    if prior["payload"] != payload:
+                        raise HTTPException(409, "Idempotency key used for a different payment")
+                    row = db.execute(
+                        "SELECT * FROM payments WHERE id = ?", (prior["payment_id"],)
+                    ).fetchone()
+                    return payment_dict(row)
             require_student(db, payment.student_id)
             cursor = db.execute(
                 "INSERT INTO payments(student_id, amount_cents, paid_on) VALUES(?, ?, ?)",
                 (payment.student_id, minor_units(payment.amount), payment.date.isoformat()),
             )
+            if idempotency_key:
+                db.execute(
+                    "INSERT INTO payment_requests(request_key,payload,payment_id) VALUES(?,?,?)",
+                    (idempotency_key, payload, cursor.lastrowid),
+                )
             row = db.execute("SELECT * FROM payments WHERE id = ?", (cursor.lastrowid,)).fetchone()
             return payment_dict(row)
 

@@ -9,13 +9,16 @@ const number = (value) =>
   new Intl.NumberFormat(window.i18n.locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value) +
+  }).format(window.currency.convert(value)) +
   "\u00a0" +
-  t("currencyUnit");
+  window.currency.unit;
 let students = [],
   deleteId = null,
   generation = 0;
 let paymentPending = false;
+let studentPending = false;
+let paymentAttempt = null;
+let historyGeneration = 0;
 let lastReport = null,
   historyStudent = null;
 $("month").value = localDate().slice(0, 7);
@@ -143,7 +146,7 @@ function renderDebtors(report) {
   const parts = new Intl.NumberFormat(window.i18n.locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).formatToParts(report.total_debt);
+  }).formatToParts(window.currency.convert(report.total_debt));
   const whole = parts
     .filter((p) => p.type !== "decimal" && p.type !== "fraction")
     .map((p) => p.value)
@@ -153,9 +156,11 @@ function renderDebtors(report) {
     .map((p) => p.value)
     .join("");
   $("total").replaceChildren(
-    document.createTextNode(whole),
+    document.createTextNode(
+      (window.currency.code === "UZS" ? "" : "≈ ") + whole,
+    ),
     node("span", minor, "minor-amount"),
-    node("span", "\u00a0" + t("currencyUnit"), "currency-unit"),
+    node("span", "\u00a0" + window.currency.unit, "currency-unit"),
   );
   $("debt-count").textContent = report.debtors.length;
   const count = report.debtors.length;
@@ -295,6 +300,8 @@ $("close-history").onclick = () => $("history-dialog").close();
 $("cancel-delete").onclick = () => $("delete-dialog").close();
 $("student-form").onsubmit = async (event) => {
   event.preventDefault();
+  if (studentPending) return;
+  studentPending = true;
   const id = $("student-id").value;
   const payload = {
     name: $("student-name").value,
@@ -314,6 +321,7 @@ $("student-form").onsubmit = async (event) => {
   } catch (e) {
     message("student-message", e.message, true);
   } finally {
+    studentPending = false;
     $("save-student").disabled = false;
   }
 };
@@ -321,6 +329,8 @@ $("payment-form").onsubmit = async (event) => {
   event.preventDefault();
   if (paymentPending) return;
   paymentPending = true;
+  const controls = [...event.currentTarget.querySelectorAll("input, select")];
+  controls.forEach((control) => (control.disabled = true));
   $("save-payment").disabled = true;
   message("payment-message", t("saving"));
   try {
@@ -329,10 +339,15 @@ $("payment-form").onsubmit = async (event) => {
       amount: $("pay-amount").value,
       date: $("pay-date").value,
     };
+    const body = JSON.stringify(payload);
+    if (!paymentAttempt || paymentAttempt.body !== body)
+      paymentAttempt = { body, key: crypto.randomUUID() };
     await request("/payments", {
       method: "POST",
-      body: JSON.stringify(payload),
+      headers: { "Idempotency-Key": paymentAttempt.key },
+      body,
     });
+    paymentAttempt = null;
     $("pay-amount").value = "";
     message("payment-message", t("paymentSaved"));
     await refresh();
@@ -340,16 +355,19 @@ $("payment-form").onsubmit = async (event) => {
     message("payment-message", e.message, true);
   } finally {
     paymentPending = false;
+    controls.forEach((control) => (control.disabled = false));
     $("save-payment").disabled = !students.length;
   }
 };
 async function history(s) {
+  const ticket = ++historyGeneration;
   historyStudent = s;
   $("history-title").textContent = t("historyFor", { name: s.name });
   $("history-list").textContent = t("loading");
   $("history-dialog").showModal();
   try {
     const rows = await request(`/students/${s.id}/payments`);
+    if (ticket !== historyGeneration || !$("history-dialog").open) return;
     $("history-list").replaceChildren();
     if (!rows.length)
       $("history-list").append(empty(t("noPayments"), t("noPaymentsText")));
@@ -367,6 +385,7 @@ async function history(s) {
       $("history-list").append(row);
     }
   } catch (e) {
+    if (ticket !== historyGeneration || !$("history-dialog").open) return;
     $("history-list").textContent = e.message;
   }
 }
@@ -384,7 +403,7 @@ $("confirm-delete").onclick = async () => {
 };
 refresh();
 
-window.addEventListener("languagechange", () => {
+function refreshDisplay() {
   renderStudents();
   if (lastReport) renderDebtors(lastReport);
   monthLabel();
@@ -395,4 +414,6 @@ window.addEventListener("languagechange", () => {
     $("student-id").value ? "editStudent" : "newStudent",
   );
   if ($("history-dialog").open && historyStudent) history(historyStudent);
-});
+}
+window.addEventListener("languagechange", refreshDisplay);
+window.addEventListener("currencychange", refreshDisplay);

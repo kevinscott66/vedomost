@@ -8,6 +8,7 @@
     <script src="/static/theme.js"></script>
     <script src="/static/translations.js" defer></script>
     <script src="/static/i18n.js" defer></script>
+    <script src="/static/currency.js" defer></script>
     <script src="/static/app.js" defer></script>
   </head>
   <body>
@@ -33,14 +34,25 @@
         </button>
       </nav>
       <div class="sidebar-bottom">
-        <label class="language-control"
-          ><span class="sr-only" data-i18n="language">Язык</span
-          ><select id="language">
-            <option value="ru">Русский</option>
-            <option value="uz">O‘zbekcha</option>
-            <option value="en">English</option>
-          </select></label
-        >
+        <div class="display-settings">
+          <label class="language-control"
+            ><span class="sr-only" data-i18n="language">Язык</span
+            ><select id="language">
+              <option value="ru">Русский</option>
+              <option value="uz">O‘zbekcha</option>
+              <option value="en">English</option>
+            </select></label
+          >
+          <label class="currency-control"
+            ><span class="sr-only" data-i18n="displayCurrency"
+              >Валюта отображения</span
+            ><select id="currency">
+              <option value="UZS">UZS · so‘m</option>
+              <option value="RUB">RUB · ₽</option>
+              <option value="USD">USD · $</option>
+            </select></label
+          >
+        </div>
         <button id="new-student">
           <img src="/static/icons/circle-plus.svg" alt="" /><span
             data-i18n="addStudent"
@@ -101,6 +113,7 @@
           >
             —
           </div>
+          <p id="currency-note" class="currency-note"></p>
           <div class="summary-caption">
             <span><span data-i18n="debtors">Задолженность</span></span
             ><span aria-hidden="true">·</span
