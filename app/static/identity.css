@@ -125,7 +125,7 @@ footer a { text-underline-offset: 4px; }
   .dashboard-page .summary { max-width: none; }
   .dashboard-page .ledger { grid-row: auto; }
   .dashboard-page .payment-panel { grid-column: 1; grid-row: auto; margin: 0; padding: 28px; }
-  .dashboard-page .payment-panel form { display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; }
+  .dashboard-page .payment-panel form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 22px; }
   .dashboard-page .payment-panel form label + label { margin-top: 0; }
   .dashboard-page .payment-panel form label { margin-bottom: 20px; }
   .dashboard-page .payment-panel .primary { align-self: end; margin-bottom: 20px; }
@@ -180,7 +180,7 @@ footer a { text-underline-offset: 4px; }
   .dashboard-page .footnote { font-size: 11px; line-height: 1.8; }
   .dashboard-page .payment-panel { grid-column: 1; grid-row: auto; position: static; margin: 0; padding: 24px; width: auto; border-radius: 22px; }
   .dashboard-page .payment-panel h2 { font-size: 20px; }
-  .dashboard-page .payment-panel input, .dashboard-page .payment-panel select { font-size: 16px; }
+  .dashboard-page .payment-panel input, .dashboard-page .payment-panel select, .dashboard-page dialog input, .dashboard-page dialog select { font-size: 16px; }
   .dashboard-page #students-view { padding: 20px; }
   .dashboard-page footer { font-size: 11px; gap: 18px; }
   .sidebar-bottom #new-student,
@@ -225,4 +225,12 @@ footer a { text-underline-offset: 4px; }
   .dashboard-page .amount::before { content: attr(data-label); display: block; color: var(--muted); font-size: 11px; margin-bottom: 6px; }
   .dashboard-page .debt { grid-column: 2; }
   .dashboard-page .amount { min-width: 0; overflow-wrap: anywhere; }
+}
+
+/* Keep editable form text readable without Safari focus zoom on touch devices. */
+@media (pointer: coarse), (max-width: 950px) {
+  .dashboard-page dialog input,
+  .dashboard-page dialog select,
+  .dashboard-page .payment-panel input,
+  .dashboard-page .payment-panel select { font-size: 16px; }
 }

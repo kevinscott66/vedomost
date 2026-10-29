@@ -398,8 +398,9 @@ select {
   font-size: 12px;
   line-height: 1.5;
 }
-/* iOS date controls otherwise keep their native intrinsic width and centred value. */
-input[type="date"] {
+/* Constrain native calendar controls, including their internal WebKit value. */
+input[type="date"],
+input[type="month"] {
   -webkit-appearance: none;
   appearance: none;
   box-sizing: border-box;
@@ -408,17 +409,22 @@ input[type="date"] {
   min-width: 0;
   text-align: left;
 }
-input[type="date"]::-webkit-date-and-time-value {
+input[type="date"]::-webkit-date-and-time-value,
+input[type="month"]::-webkit-date-and-time-value {
   min-width: 0;
   text-align: left;
 }
-input[type="date"]::-webkit-datetime-edit {
+input[type="date"]::-webkit-datetime-edit,
+input[type="month"]::-webkit-datetime-edit {
   min-width: 0;
   padding: 0;
 }
 input::placeholder {
   color: var(--muted);
   opacity: 1;
+}
+form label {
+  min-width: 0;
 }
 form label input,
 form label select {
@@ -552,6 +558,7 @@ dialog {
   border-radius: 12px;
   width: min(480px, calc(100% - 32px));
   max-height: 90vh;
+  max-height: 90dvh;
   overflow: auto;
   padding: 28px;
   background: var(--panel);
@@ -571,6 +578,7 @@ dialog::backdrop {
   font-size: 22px;
 }
 .icon {
+  border-radius: 12px;
   min-width: 44px;
   min-height: 44px;
   border: 0;
