@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Ведомость: учёт оплат учебного центра с понятным расчётом задолженности." />
+  <title>Ведомость — история проекта</title>
+  <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/identity.css" />
+  <link rel="stylesheet" href="/static/case.css" />
+  <script src="/static/theme.js"></script>
+    <script src="/static/presentation.js" defer></script>
+  <script src="/static/translations.js" defer></script>
+  <script src="/static/case-copy.js" defer></script>
+  <script src="/static/i18n.js" defer></script>
+  <script src="/static/legal-content.js" defer></script>
+  <script src="/static/case.js" defer></script>
+</head>
+<body class="case-page">
+  <header class="case-nav">
+    <a class="case-wordmark" href="/"><span data-i18n="brand">ведомость</span><span class="brand-dot">.</span></a>
+    <div class="case-nav-actions">
+      <label class="select-control"><span class="sr-only" data-i18n="language">Язык</span><select id="language"><option value="ru">Русский</option><option value="uz">O‘zbekcha</option><option value="en">English</option></select></label>
+      <button id="theme-toggle" class="case-theme" aria-label="Включить светлую тему"><img id="theme-icon" src="/static/icons/sun.svg" alt=""/><span id="theme-label" class="sr-only">Светлая тема</span></button>
+      <a class="case-open" href="/" data-i18n="caseOpen">Открыть приложение ↗</a>
+    </div>
+  </header>
+  <main class="case-main">
+    <section class="case-hero" aria-labelledby="case-title">
+      <div class="case-intro">
+        <p class="case-kicker" data-i18n="caseKicker">Учёт оплат учебного центра</p>
+        <h1 id="case-title" data-i18n="caseHeadline">Учёт оплат<br/>учебного центра</h1>
+        <p class="case-lead" data-i18n="caseLead">Ученики, оплаты и остаток за месяц. Валютные платежи сохраняются с курсом на момент записи.</p>
+        <a class="case-primary" href="/" data-i18n="caseTry">Посмотреть в работе ↗</a>
+        <a class="case-scenario-link" href="/try" data-i18n="caseScenario">Попробовать за минуту →</a>
+        <p class="case-meta" data-i18n="caseMeta">Тестовый проект · вымышленные данные · RU / UZ / EN</p>
+      </div>
+      <div class="case-art" data-parallax aria-hidden="true"><img src="/static/media/receipt-study.webp" width="1448" height="1086" alt="" fetchpriority="high" /></div>
+    </section>
+    <dl class="case-example" aria-label="Учебный расчёт" data-i18n-aria="caseExampleLabel">
+      <div><dt data-i18n="chargedMonth">Начислено за месяц</dt><dd><span data-case-amount="800000">800 000</span> <small data-i18n="currencyUnit">сум</small></dd></div>
+      <div><dt data-i18n="casePayment">Оплата</dt><dd><span data-case-amount="400000">400 000</span> <small data-i18n="currencyUnit">сум</small></dd></div>
+      <div><dt data-i18n="remaining">Осталось</dt><dd><span data-case-amount="400000">400 000</span> <small data-i18n="currencyUnit">сум</small></dd></div>
+    </dl>
+    <section class="case-brief" aria-label="Задача и решение" data-i18n-aria="caseBriefLabel">
+      <p class="case-kicker" data-i18n="caseTaskLabel">Задача</p>
+      <p data-i18n="caseTask">Собрать мобильную ведомость: ученики, оплаты и задолженность за месяц. Сделать результат доступным для проверки через браузер и открытый репозиторий.</p>
+    </section>
+    <section class="case-decisions" aria-labelledby="case-decisions-title">
+      <div class="case-section-head"><p class="case-kicker" data-i18n="caseDecisionsLabel">Три решения</p><h2 id="case-decisions-title" data-i18n="caseDecisionsTitle">Как устроен<br/>учёт.</h2></div>
+      <div class="case-decision"><div><h3 data-i18n="caseDecision1">Остаток можно объяснить</h3><p data-i18n="caseDecision1Text">Нажмите на сумму долга. В расчёте видны начисление, все оплаты выбранного месяца и оставшаяся сумма. Итог и детализация получены с сервера вместе.</p></div></div>
+      <div class="case-decision"><div><h3 data-i18n="caseDecision2">Курс записи сохраняется</h3><p data-i18n="caseDecision2Text">Рубли и доллары записываются с исходной суммой, курсом и эквивалентом в UZS. Обновление котировок влияет на справочное отображение, но не переписывает оплату.</p></div></div>
+      <div class="case-decision"><div><h3 data-i18n="caseDecision3">Повторное нажатие — одна оплата</h3><p data-i18n="caseDecision3Text">При повторе того же запроса сервер возвращает сохранённую запись. Это помогает восстановиться после сбоя сети без дублирования платежа.</p></div></div>
+    </section>
+    <section class="case-watch" aria-labelledby="case-watch-title">
+      <div class="case-section-head"><p class="case-kicker" data-i18n="caseWatchLabel">Короткая демонстрация</p><h2 id="case-watch-title" data-i18n="caseWatchTitle">Минута внутри<br/>приложения.</h2></div>
+      <video id="case-video" controls playsinline preload="none" poster="/static/media/walkthrough-poster.jpg" aria-label="Демонстрация приложения" data-i18n-aria="caseVideoLabel">
+        <source src="/static/media/vedomost-walkthrough.mp4" type="video/mp4" />
+        <track kind="subtitles" srclang="ru" label="Русский" src="/static/media/walkthrough-ru.vtt" />
+        <track kind="subtitles" srclang="en" label="English" src="/static/media/walkthrough-en.vtt" />
+        <track kind="subtitles" srclang="uz" label="O‘zbekcha" src="/static/media/walkthrough-uz.vtt" />
+      </video>
+      <p class="case-video-note" data-i18n="caseVideoNote">Без звука. Снимки реального интерфейса с пояснениями. Все данные учебные.</p>
+    </section>
+    <section class="case-honesty" aria-labelledby="case-honesty-title">
+      <p class="case-kicker" data-i18n="caseProcessLabel">Как сделано</p>
+      <div><h2 id="case-honesty-title" data-i18n="caseProcessTitle">Разработка и проверка</h2><p data-i18n="caseProcessText">Код, тесты и оформление подготовлены с помощью AI. Моя роль — постановка задачи, выбор решений, проверка результата и доведение до публикации. Коммерческий опыт и самостоятельное профессиональное написание кода этим проектом не заявляются.</p>
+      <p class="case-limits" data-i18n="caseLimits">Границы демо: текущий тариф без истории его изменений; расчёт за выбранный календарный месяц, без переноса переплаты. Реальные деньги приложение не принимает.</p>
+      <a class="case-source" href="https://github.com/kevinscott66/vedomost" target="_blank" rel="noopener noreferrer" data-i18n="caseSource">Изучить исходники ↗</a></div>
+    </section>
+    <footer class="case-footer"><a href="/" data-i18n="caseReturn">Вернуться к ведомости ↗</a><nav><a href="/privacy" data-i18n="privacy">Конфиденциальность</a><a href="/terms" data-i18n="terms">Условия</a><a href="/rights" data-i18n="rights">Права</a></nav></footer>
+  </main>
+</body>
+</html>

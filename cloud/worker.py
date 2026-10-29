@@ -301,7 +301,7 @@ async def dispatch(path: str, request: Request):
     page = path.rstrip("/") or "index.html"
     if page.startswith("static/"):
         page = page[len("static/") :]
-    if page in {"privacy", "terms", "rights", "docs"}:
+    if page in {"privacy", "terms", "rights", "docs", "case", "try"}:
         page += ".html"
     if ".." in page or "\\" in page:
         return output({"detail": "Not found"}, 404)

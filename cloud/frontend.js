@@ -39,7 +39,7 @@
     const url = new URL(raw, window.location.href);
     return (
       url.origin === window.location.origin &&
-      /^\/(?:students(?:\/[^/]+(?:\/payments)?)?|payments|debtors|exchange-rates)$/.test(url.pathname) &&
+      /^\/(?:students(?:\/[^/]+(?:\/(?:payments|statement))?)?|payments|debtors|exchange-rates)$/.test(url.pathname) &&
       !url.pathname.startsWith(`${base}/`) &&
       !url.pathname.startsWith("/static/")
     );

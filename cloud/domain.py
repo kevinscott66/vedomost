@@ -267,14 +267,41 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
             working["next_student"] += 1
             return _result(201, s, True, working, state)
 
-        m = re.fullmatch(r"/students/([^/]+)(?:/(payments))?", path)
+        m = re.fullmatch(r"/students/([^/]+)(?:/(payments|statement))?", path)
         if m:
             try:
                 sid = int(m.group(1))
             except ValueError:
                 raise DomainError(422, "Invalid student id") from None
             s = _student(working, sid)
-            if m.group(2) and method == "GET":
+            if m.group(2) == "statement" and method == "GET":
+                month = query.get("month")
+                start, end = _month_bounds(month)
+                rows = [
+                    p
+                    for p in working["payments"]
+                    if p["student_id"] == sid
+                    and start <= p["date"]
+                    and (end is None or p["date"] < end)
+                ]
+                rows.sort(key=lambda p: (p["date"], p["id"]))
+                charge = _cents(s["monthly_fee"]) if s["start_month"] <= month else 0
+                paid = sum(_cents(p["base_amount"]) for p in rows)
+                return _result(
+                    200,
+                    {
+                        "month": month,
+                        "student": _public_student(s),
+                        "charge": _money(charge),
+                        "paid": _money(paid),
+                        "debt": _money(max(0, charge - paid)),
+                        "payments": rows,
+                    },
+                    False,
+                    working,
+                    state,
+                )
+            if m.group(2) == "payments" and method == "GET":
                 rows = [p for p in working["payments"] if p["student_id"] == sid]
                 rows.sort(key=lambda p: (p["date"], p["id"]), reverse=True)
                 return _result(200, rows, False, working, state)

@@ -206,7 +206,7 @@ async function runtime() {
     requests,
     respond,
     display: (name) => events.fire(name),
-    payButtons: () => element("debt-list").querySelectorAll("button"),
+    payButtons: () => element("debt-list").querySelectorAll(".pay-button"),
     studentButtons: () => element("students-list").querySelectorAll("button"),
   };
 }
@@ -447,3 +447,29 @@ for (const [detail, status, expected] of [
     assert.equal(app.element("save-payment").disabled, false);
   });
 }
+
+test("debt detail uses a server statement and ignores a closed or superseded view", async () => {
+  const app = await runtime();
+  const triggers = app.element("debt-list").querySelectorAll(".statement-trigger");
+  const first = triggers[0].fire("click");
+  assert.equal(app.element("statement-dialog").open, true);
+  const pending = app.requests.at(-1);
+  assert.match(pending.path, /\/students\/1\/statement\?month=/);
+  await app.element("close-statement").fire("click");
+  await app.respond(pending, { student: people[0], month: "2026-10", charge: "100.00",
+    paid: "60.00", debt: "40.00", payments: [] });
+  await first;
+  assert.equal(app.element("statement-list").textContent, "loading");
+  const second = triggers[0].fire("click");
+  await app.respond(app.requests.at(-1), { student: people[0], month: "2026-10",
+    charge: "100.00", paid: "60.00", debt: "40.00", payments: [] });
+  await second;
+  assert.match(app.element("statement-list").textContent, /40\.00/);
+  await app.display("currencychange");
+  assert.match(app.element("statement-list").textContent, /40\.00/);
+  const changed = app.element("month").fire("change");
+  assert.equal(app.element("statement-dialog").open, false);
+  await app.respond(app.requests.at(-2), people);
+  await app.respond(app.requests.at(-1), report(app.element("month").value));
+  await changed;
+});

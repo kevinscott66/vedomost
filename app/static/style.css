@@ -1080,7 +1080,8 @@ main.students-mode {
     font-size: 11px;
   }
 }
-.language-control select {
+.language-control select,
+.currency-control select {
   min-height: 40px;
   font-size: 11px;
   padding: 8px 10px;
@@ -1343,12 +1344,6 @@ textarea:focus-visible {
   display: grid;
   gap: 8px;
 }
-.currency-control select {
-  min-height: 40px;
-  font-size: 11px;
-  padding: 8px 10px;
-  background: var(--input);
-}
 .currency-note {
   font-size: 10px;
   line-height: 1.7;
@@ -1374,18 +1369,15 @@ textarea:focus-visible {
   }
 }
 
-.language-control,
-.currency-control {
+.select-control {
   position: relative;
 }
-.language-control select,
-.currency-control select {
+.select-control select {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 34px;
 }
-.language-control::after,
-.currency-control::after {
+.select-control::after {
   content: "";
   position: absolute;
   right: 14px;
@@ -1423,3 +1415,29 @@ textarea:focus-visible {
 .currency-note summary:hover { color: var(--text); }
 .currency-note summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .currency-note p { margin: 8px 0 0; font-size: 11px; }
+
+/* A payment remains legible while its recorded conversion is inspectable. */
+.statement-trigger {
+  background: none;
+  border: 0;
+  padding: 0;
+  border-bottom: 1px dotted currentColor;
+  border-radius: 0;
+  justify-self: end;
+  text-align: right;
+  text-underline-offset: 0.3em;
+}
+.statement-trigger:hover { color: var(--text); }
+#statement-dialog { width: min(590px, calc(100% - 32px)); }
+#statement-dialog h2 { font-size: 1.12rem; }
+.statement-period { color: var(--muted); margin: 0 0 24px; }
+.statement-line { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; }
+.statement-line strong { font-variant-numeric: tabular-nums; text-align: right; }
+.statement-payment { border-top: 1px solid var(--line); }
+.statement-rate { margin: 0 0 14px; color: var(--muted); font-size: .8rem; line-height: 1.7; }
+.statement-result { border-top: 1px solid var(--line); font-size: 1.2rem; color: var(--accent); }
+.statement-note { color: var(--muted); font-size: .78rem; line-height: 1.7; margin: 16px 0 0; }
+@media (max-width: 700px) {
+  .statement-trigger { justify-self: stretch; }
+  .statement-line { gap: 12px; font-size: .9rem; }
+}

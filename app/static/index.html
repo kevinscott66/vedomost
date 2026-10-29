@@ -1,18 +1,20 @@
 <!doctype html>
-<html lang="ru" data-theme="dark">
+<html lang="ru" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ведомость — оплаты учебного центра</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/identity.css" />
     <script src="/static/theme.js"></script>
+    <script src="/static/presentation.js" defer></script>
     <script src="/static/translations.js" defer></script>
     <script src="/static/i18n.js" defer></script>
     <script src="/static/currency.js" defer></script>
     <script src="/static/calendar.js" defer></script>
     <script src="/static/app.js" defer></script>
   </head>
-  <body>
+  <body class="dashboard-page">
     <aside class="sidebar">
       <a
         class="brand"
@@ -36,7 +38,7 @@
       </nav>
       <div class="sidebar-bottom">
         <div class="display-settings">
-          <label class="language-control"
+          <label class="language-control select-control"
             ><span class="sr-only" data-i18n="language">Язык</span
             ><select id="language">
               <option value="ru">Русский</option>
@@ -44,7 +46,7 @@
               <option value="en">English</option>
             </select></label
           >
-          <label class="currency-control"
+          <label class="currency-control select-control"
             ><span class="sr-only" data-i18n="displayCurrency"
               >Валюта отображения</span
             ><select id="currency">
@@ -73,9 +75,10 @@
     </aside>
     <main>
       <header class="page-header">
+        <div class="welcome-art" data-parallax aria-hidden="true"><img src="/static/media/receipt-study.webp" width="1448" height="1086" alt="" fetchpriority="high" /></div>
         <p class="context"><span data-i18n="context">Учебный центр</span></p>
         <div class="heading-row">
-          <h1 id="page-title"><span data-i18n="payments">Оплаты</span></h1>
+          <h1 id="page-title"><span data-i18n="paymentsHeading">Оплаты учебного центра</span></h1>
           <div class="period">
             <button
               id="previous-month"
@@ -102,18 +105,11 @@
             </button>
           </div>
         </div>
+        <p class="welcome-description" data-i18n="welcomeDescription">Ученики, платежи и остаток за месяц.</p>
       </header>
       <div id="global-error" role="alert" hidden></div>
       <section id="debts-view">
         <div class="summary">
-          <div
-            id="total"
-            class="total"
-            aria-label="Общая задолженность"
-            data-i18n-aria="totalDebt"
-          >
-            —
-          </div>
           <div class="summary-caption">
             <span><span data-i18n="debtors">Задолженность</span></span
             ><span aria-hidden="true">·</span
@@ -123,6 +119,14 @@
                 ><span data-i18n="studentMany">учеников</span></span
               ></span
             >
+          </div>
+          <div
+            id="total"
+            class="total"
+            aria-label="Общая задолженность"
+            data-i18n-aria="totalDebt"
+          >
+            —
           </div>
           <details class="currency-note" id="currency-details" hidden>
             <summary id="currency-summary">Курсы</summary>
@@ -193,15 +197,16 @@
         <nav
           class="footer-links"
           aria-label="Документы"
-          data-i18n-aria="sections"
+          data-i18n-aria="documents"
         >
+          <a href="/case" data-i18n="caseLink">О проекте</a>
           <a href="/privacy" data-i18n="privacy"></a>
           <a href="/terms" data-i18n="terms"></a>
           <a href="/rights" data-i18n="rights"></a>
         </nav>
       </footer>
     </main>
-    <dialog id="student-dialog">
+    <dialog id="student-dialog" aria-labelledby="student-title">
       <form id="student-form">
         <div class="dialog-head">
           <h2 id="student-title">
@@ -268,19 +273,26 @@
         </button>
       </form>
     </dialog>
-    <dialog id="history-dialog">
+    <dialog id="statement-dialog" aria-labelledby="statement-title">
+      <div class="dialog-head">
+        <h2 id="statement-title">Расчёт задолженности</h2>
+        <button type="button" class="icon" id="close-statement" data-i18n-aria="close" aria-label="Закрыть">×</button>
+      </div>
+      <div id="statement-list" aria-live="polite"></div>
+    </dialog>
+    <dialog id="history-dialog" aria-labelledby="history-title">
       <div class="dialog-head">
         <h2 id="history-title">
           <span data-i18n="history">История оплат</span>
         </h2>
-        <button class="icon" id="close-history" aria-label="Закрыть историю">
+        <button class="icon" id="close-history" aria-label="Закрыть историю" data-i18n-aria="close">
           ×
         </button>
       </div>
       <div id="history-list"></div>
     </dialog>
-    <dialog id="delete-dialog">
-      <h2><span data-i18n="deleteStudent">Удалить ученика?</span></h2>
+    <dialog id="delete-dialog" aria-labelledby="delete-title">
+      <h2 id="delete-title"><span data-i18n="deleteStudent">Удалить ученика?</span></h2>
       <p id="delete-description"></p>
       <p class="muted" data-i18n="deleteWarning"></p>
       <p id="delete-message" role="status"></p>

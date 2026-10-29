@@ -35,6 +35,8 @@ let deleteDialogRevision = 0;
 let reportStatus = "loading";
 let paymentAttempt = null;
 let historyGeneration = 0;
+let statementGeneration = 0;
+let currentStatement = null;
 let paymentContextMonth = null;
 let paymentPeriodNotice = false;
 let lastReport = null,
@@ -142,14 +144,30 @@ function renderReportStatus() {
       : empty(t("loadError"), t("loadErrorText")),
   );
 }
-function empty(title, text) {
+function empty(title, text, illustrated = false) {
   const e = node("div", undefined, "empty");
+  if (illustrated) {
+    const image = node("img", undefined, "empty-art");
+    image.setAttribute("src", "/static/media/receipt-study.webp");
+    image.setAttribute("alt", "");
+    image.setAttribute("width", "1448");
+    image.setAttribute("height", "1086");
+    e.append(image);
+  }
   e.append(node("strong", title), node("span", text));
   return e;
+}
+function initialsBadge(name) {
+  const initials = String(name).trim().split(/\s+/).slice(0, 2)
+    .map(part => Array.from(part)[0] || "").join("");
+  const badge = node("span", initials, "initials-badge");
+  badge.setAttribute("aria-hidden", "true");
+  return badge;
 }
 function person(s) {
   const e = node("div", undefined, "person");
   e.append(
+    initialsBadge(s.name),
     node("span", s.name, "person-name"),
     node("span", `${s.group} · ${s.phone}`, "person-detail"),
   );
@@ -251,6 +269,7 @@ function renderDebtors(report) {
       empty(
         t(active ? "allPaid" : "noCharges"),
         t(active ? "allPaidText" : "noChargesText"),
+        true,
       ),
     );
     return;
@@ -264,7 +283,9 @@ function renderDebtors(report) {
     const row = node("div", undefined, "debtor-row");
     const paid = node("div", number(s.paid), "amount");
     paid.setAttribute("data-label", t("paid"));
-    const debt = node("div", number(s.debt), "amount debt");
+    const debt = button(number(s.debt), () => openStatement(s, report.month), "amount debt statement-trigger");
+    debt.setAttribute("aria-label", t("explainDebtFor", { name: s.name }));
+    debt.setAttribute("aria-haspopup", "dialog");
     debt.setAttribute("data-label", t("remaining"));
     const pay = button(
       t("pay"),
@@ -288,6 +309,7 @@ function renderDebtors(report) {
     pay.setAttribute("aria-label", t("payFor", { name: s.name }));
     const identity = node("div", undefined, "debtor-person");
     identity.append(
+      initialsBadge(s.name),
       node("div", s.name, "debtor-name"),
       node("div", s.group, "debtor-group"),
     );
@@ -296,6 +318,9 @@ function renderDebtors(report) {
   }
 }
 async function refresh() {
+  ++statementGeneration;
+  currentStatement = null;
+  if ($("statement-dialog").open) $("statement-dialog").close();
   monthLabel();
   if (paymentContextMonth && paymentContextMonth !== $("month").value) {
     paymentContextMonth = null;
@@ -355,7 +380,7 @@ for (const [tab, other, view, otherView] of [
 ])
   $(tab).onclick = () => {
     $("page-title").textContent =
-      tab === "debts-tab" ? t("apiPayments") : t("apiStudents");
+      tab === "debts-tab" ? t("paymentsHeading") : t("apiStudents");
     document
       .querySelector("main")
       .classList.toggle("students-mode", tab === "students-tab");
@@ -388,6 +413,7 @@ function editStudent(s = null) {
 }
 $("new-student").onclick = () => editStudent();
 $("close-student").onclick = () => $("student-dialog").close();
+$("close-statement").onclick = () => $("statement-dialog").close();
 $("close-history").onclick = () => $("history-dialog").close();
 $("cancel-delete").onclick = () => $("delete-dialog").close();
 $("student-form").onsubmit = async (event) => {
@@ -485,6 +511,52 @@ $("payment-form").onsubmit = async (event) => {
     $("save-payment").disabled = !students.length;
   }
 };
+function renderStatement(statement) {
+  $("statement-title").textContent = t("calculationFor", { name: statement.student.name });
+  const list = $("statement-list");
+  list.replaceChildren();
+  list.append(node("p", window.i18n.formatMonth(statement.month), "statement-period"));
+  const line = (label, value, cls = "") => {
+    const row = node("div", undefined, "statement-line " + cls);
+    row.append(node("span", label), node("strong", paymentNumber(value, "UZS")));
+    return row;
+  };
+  list.append(line(t("chargedMonth"), statement.charge));
+  if (!statement.payments.length) list.append(node("p", t("noPaymentsMonth"), "muted"));
+  for (const p of statement.payments) {
+    const item = node("section", undefined, "statement-payment");
+    const day = new Intl.DateTimeFormat(window.i18n.locale).format(new Date(p.date + "T12:00:00"));
+    item.append(line(day, p.base_amount));
+    if (p.currency !== "UZS") {
+      item.append(node("p", paymentNumber(p.amount, p.currency) + " · " + t("bookedRate", {
+        rate: new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 8 }).format(p.exchange_rate),
+        unit: p.currency === "USD" ? "$" : "₽", date: p.rate_date, source: p.rate_source,
+      }), "statement-rate"));
+    }
+    list.append(item);
+  }
+  list.append(line(t("paidMonth"), statement.paid));
+  list.append(line(t("remaining"), statement.debt, "statement-result"));
+  list.append(node("p", t("statementBaseNote"), "statement-note"));
+  list.append(node("p", t("statementFeeNote"), "statement-note"));
+}
+async function openStatement(student, month) {
+  const ticket = ++statementGeneration;
+  currentStatement = null;
+  $("statement-title").textContent = t("calculationFor", { name: student.name });
+  $("statement-list").textContent = t("loading");
+  if (!$("statement-dialog").open) $("statement-dialog").showModal();
+  try {
+    const statement = await request(`/students/${student.id}/statement?month=${encodeURIComponent(month)}`);
+    if (ticket !== statementGeneration || !$("statement-dialog").open) return;
+    currentStatement = statement;
+    renderStatement(statement);
+  } catch (error) {
+    if (ticket !== statementGeneration || !$("statement-dialog").open) return;
+    $("statement-list").replaceChildren(node("p", error.message), button(t("retry"), () => openStatement(student, month)));
+  }
+}
+
 async function history(s) {
   const ticket = ++historyGeneration;
   historyStudent = s;
@@ -550,12 +622,13 @@ function refreshDisplay() {
   else renderReportStatus();
   monthLabel();
   $("page-title").textContent = t(
-    $("students-view").hidden ? "payments" : "students",
+    $("students-view").hidden ? "paymentsHeading" : "students",
   );
   $("student-title").textContent = t(
     $("student-id").value ? "editStudent" : "newStudent",
   );
   if ($("history-dialog").open && historyStudent) history(historyStudent);
+  if ($("statement-dialog").open && currentStatement) renderStatement(currentStatement);
 }
 window.addEventListener("languagechange", refreshDisplay);
 window.addEventListener("currencychange", refreshDisplay);

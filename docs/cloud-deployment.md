@@ -21,6 +21,10 @@ D1 schema is in `cloud/schema.sql`; binding and route are in `cloud/wrangler.jso
 
 The root domain's eight A/AAAA records were switched to Proxied with the owner's approval. GitHub Pages remains the origin for paths outside `/demos/vedomost*`. Mail records and subdomains were not changed. The Worker route is specific to the demo path.
 
+## Release 29 October 2026
+
+Published the trilingual case and isolated teaching scenario, updated visual identity, responsive cards and accessible dialog headings. Statement requests use the same session/base-path wrapper as other API requests. No schema migration.
+
 ## Verification
 
 71 pytest and 31 JavaScript tests pass. Session-renewal tests confirm the same cookie and ledger persist across reopening, while expired sessions are not revived. Actual local Workers/Pyodide and local D1 verified asset routes, session initialization, persistence and concurrent idempotency. Public Workers verification confirmed isolated visitors, persistence, four concurrent payment retries producing one record, CSRF rejection, and foreign-payment snapshots. A 1.25 USD test payment booked 14,827.44 UZS with the exact CBR rate dated 2026-10-28. Test sessions were deleted afterwards. Public official FX refresh succeeded through CBR. The domain route also passed the public API checks when resolving the hostname to its current Cloudflare address. Some resolvers still returned cached GitHub addresses immediately after the DNS change. The browser verified the Workers URL and RUB display; [published screenshot](cloud-demo.png).

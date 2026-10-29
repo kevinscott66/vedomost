@@ -96,3 +96,17 @@ test("cloud fetch leaves external and static requests untouched", async () => {
     { input: "/static/style.css", init: staticInit },
   ]);
 });
+
+
+test("cloud statement requests retain their month and use the demo session path", async () => {
+  const calls = [];
+  const window = setup((input) => {
+    calls.push(input);
+    return Promise.resolve(response());
+  });
+  await window.fetch("/students/3/statement?month=2026-10");
+  assert.deepEqual(calls, [
+    "/demos/vedomost/session",
+    "/demos/vedomost/students/3/statement?month=2026-10",
+  ]);
+});

@@ -79,6 +79,15 @@ class DebtorsReport(BaseModel):
     debtors: list[Debtor]
 
 
+class StudentStatement(BaseModel):
+    month: str
+    student: Student
+    charge: Decimal
+    paid: Decimal
+    debt: Decimal
+    payments: list[Payment]
+
+
 def minor_units(value: Decimal) -> int:
     return int(value * 100)
 
@@ -183,6 +192,14 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
     @api.get("/docs", include_in_schema=False)
     def documentation():
         return FileResponse(STATIC / "docs.html")
+
+    @api.get("/case", include_in_schema=False)
+    def portfolio_case():
+        return FileResponse(STATIC / "case.html")
+
+    @api.get("/try", include_in_schema=False)
+    def teaching_example():
+        return FileResponse(STATIC / "try.html")
 
     @api.get("/redoc", include_in_schema=False)
     def redoc():
@@ -378,6 +395,29 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                 (student_id,),
             )
             return [payment_dict(row) for row in rows]
+
+    @api.get("/students/{student_id}/statement", response_model=StudentStatement)
+    def statement(student_id: StudentId, month: Annotated[str, Query()]):
+        start, end = month_bounds(month)
+        with connect() as db:
+            # One read snapshot: a concurrent payment cannot split detail and total.
+            db.execute("BEGIN")
+            student = require_student(db, student_id)
+            payments = db.execute(
+                "SELECT * FROM payments WHERE student_id=? AND paid_on>=? "
+                "AND (? IS NULL OR paid_on<?) ORDER BY paid_on, id",
+                (student_id, start, end, end),
+            ).fetchall()
+            charged = student["monthly_fee_cents"] if student["start_month"] <= month else 0
+            paid = sum(row["amount_cents"] for row in payments)
+            return {
+                "month": month,
+                "student": student_dict(student),
+                "charge": money(charged),
+                "paid": money(paid),
+                "debt": money(max(0, charged - paid)),
+                "payments": [payment_dict(row) for row in payments],
+            }
 
     @api.get("/debtors", response_model=DebtorsReport)
     def debtors(month: Annotated[str, Query(description="Календарный месяц YYYY-MM")]):

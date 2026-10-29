@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ведомость — учебный сценарий</title>
+  <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/identity.css" />
+  <link rel="stylesheet" href="/static/case.css" />
+  <link rel="stylesheet" href="/static/scenario.css" />
+  <script src="/static/theme.js"></script>
+  <script src="/static/translations.js" defer></script>
+  <script src="/static/case-copy.js" defer></script>
+  <script src="/static/scenario-copy.js" defer></script>
+  <script src="/static/i18n.js" defer></script>
+  <script src="/static/legal-content.js" defer></script>
+  <script src="/static/scenario-data.js" defer></script>
+  <script src="/static/scenario.js" defer></script>
+</head>
+<body class="case-page">
+  <header class="case-nav">
+    <a class="case-wordmark" href="/case"><span data-i18n="brand">ведомость</span><span class="brand-dot">.</span></a>
+    <div class="case-nav-actions">
+      <label class="select-control"><span class="sr-only" data-i18n="language">Язык</span><select id="language"><option value="ru">Русский</option><option value="uz">O‘zbekcha</option><option value="en">English</option></select></label>
+      <button id="theme-toggle" class="case-theme" aria-label="Включить светлую тему"><img id="theme-icon" src="/static/icons/sun.svg" alt=""/><span id="theme-label" class="sr-only">Светлая тема</span></button>
+      <a class="case-open" href="/case" data-i18n="tourBack">К кейсу ↗</a>
+    </div>
+  </header>
+  <main class="case-main tour-main">
+    <p class="case-kicker" data-i18n="tourKicker">Учебный сценарий / около минуты</p>
+    <ol class="tour-progress" aria-label="Шаги примера" data-i18n-aria="tourStepsLabel">
+      <li id="tour-step-0" aria-current="step"><span>01</span><span data-i18n="tourStep0">Остаток</span></li>
+      <li id="tour-step-1"><span>02</span><span data-i18n="tourStep1">Оплата</span></li>
+      <li id="tour-step-2"><span>03</span><span data-i18n="tourStep2">Смена курса</span></li>
+    </ol>
+    <div class="tour-workspace">
+      <section class="tour-story" aria-labelledby="tour-title">
+        <h1 id="tour-title" tabindex="-1"></h1>
+        <p id="tour-description" class="tour-description"></p>
+        <p id="tour-rate" class="tour-rate"></p>
+        <div class="tour-actions"><button type="button" id="tour-next" class="case-primary"></button><a href="/" id="tour-open" class="case-primary" data-i18n="tourOpen" hidden>Открыть рабочую ведомость ↗</a><button type="button" id="tour-reset" class="tour-reset" data-i18n="tourReset">Начать заново</button></div>
+        <p class="tour-disclaimer" data-i18n="tourDisclaimer">Это отдельный учебный пример. Данные и курсы условные, действия не записываются в ведомость.</p>
+        <p id="tour-status" class="sr-only" role="status" aria-live="polite"></p>
+      </section>
+      <section class="tour-ledger" aria-labelledby="tour-student">
+        <p class="tour-card-kicker" data-i18n="tourCardKicker">Учебная ведомость · пример</p>
+        <h2 id="tour-student" data-i18n="tourStudent">Анна Миронова</h2>
+        <p class="tour-group" data-i18n="tourGroup">Английский · A2</p>
+        <dl class="tour-totals">
+          <div><dt data-i18n="chargedMonth">Начислено за месяц</dt><dd id="tour-charge"></dd></div>
+          <div><dt data-i18n="paidMonth">Всего внесено</dt><dd id="tour-paid"></dd></div>
+          <div class="tour-debt"><dt data-i18n="remaining">Осталось</dt><dd id="tour-debt"></dd></div>
+        </dl>
+        <section id="tour-payment" class="tour-booked" hidden>
+          <p data-i18n="tourRecorded">Запись об оплате</p>
+          <div class="tour-record"><strong id="tour-original"></strong><span aria-hidden="true">→</span><strong id="tour-equivalent"></strong></div>
+          <p id="tour-booked-rate" class="tour-small"></p>
+          <p class="tour-small" data-i18n="tourPaymentNote">Эта сумма в UZS участвует в расчёте долга.</p>
+        </section>
+        <section id="tour-reference" class="tour-reference" hidden><p data-i18n="tourReferenceTitle">Справочное отображение долга в USD</p><div><span id="tour-old-display"></span><span aria-hidden="true">→</span><strong id="tour-new-display"></strong></div><p class="tour-small" data-i18n="tourReferenceNote">Эквивалент долга в долларах изменился. Запись об оплате и долг в UZS остались прежними.</p></section>
+      </section>
+    </div>
+    <footer class="case-footer"><a href="/case" data-i18n="tourBack">К кейсу ↗</a><a href="/" data-i18n="tourOpen">Открыть рабочую ведомость ↗</a></footer>
+  </main>
+</body>
+</html>

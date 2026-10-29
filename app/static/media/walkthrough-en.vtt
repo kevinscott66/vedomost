@@ -1,0 +1,19 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:07.000
+Vedomost. A learning centre payment ledger. All data is fictional.
+
+00:00:07.000 --> 00:00:16.000
+The ledger shows debt for the selected month. Open Anna’s calculation.
+
+00:00:16.000 --> 00:00:26.000
+Fee: 800,000 UZS. Paid: 400,000. Remaining: 400,000.
+
+00:00:26.000 --> 00:00:35.000
+Add a partial payment: 10 dollars, dated 28 October.
+
+00:00:35.000 --> 00:00:45.000
+Payment saved. Anna’s debt is now 281,380.44 UZS.
+
+00:00:45.000 --> 00:01:00.000
+The detail retains $10, the recorded rate and 118,619.56 UZS. Later rate updates will not rewrite this payment.
