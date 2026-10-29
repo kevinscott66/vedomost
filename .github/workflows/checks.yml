@@ -5,13 +5,20 @@ permissions:
 jobs:
   api:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: python -m pip install -r requirements-dev.txt
+          cache-dependency-path: requirements-lock.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-lock.txt
       - run: python -m ruff check app tests cloud/worker.py cloud/domain.py cloud/build_assets.py
       - run: python -m ruff format --check app tests cloud/worker.py cloud/domain.py cloud/build_assets.py
       - run: python -m pytest -q

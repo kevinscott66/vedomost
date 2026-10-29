@@ -139,7 +139,9 @@ def _public_student(student):
 
 
 def _public_payment(payment):
-    return copy.deepcopy(payment)
+    # Older JSON ledgers predate cancellation fields. Normalize responses without
+    # rewriting stored payments or the immutable activity snapshots beside them.
+    return {"voided_at": None, "void_reason": None, **copy.deepcopy(payment)}
 
 
 def seed(today: date | None = None) -> dict:
@@ -218,7 +220,7 @@ def seed(today: date | None = None) -> dict:
     ]
     return {
         "students": students,
-        "payments": payments,
+        "payments": [_public_payment(p) for p in payments],
         "requests": {},
         "next_student": 5,
         "next_payment": 4,
@@ -364,7 +366,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                         "charge": _money(charge),
                         "paid": _money(paid),
                         "debt": _money(max(0, charge - paid)),
-                        "payments": rows,
+                        "payments": [_public_payment(p) for p in rows],
                     },
                     False,
                     working,
@@ -373,7 +375,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
             if m.group(2) == "payments" and method == "GET":
                 rows = [p for p in working["payments"] if p["student_id"] == sid]
                 rows.sort(key=lambda p: (p["date"], p["id"]), reverse=True)
-                return _result(200, rows, False, working, state)
+                return _result(200, [_public_payment(p) for p in rows], False, working, state)
             if not m.group(2) and method == "GET":
                 return _result(200, _public_student(s), False, working, state)
             if not m.group(2) and method == "PUT":
@@ -432,7 +434,8 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                         state,
                     )
             s = _student(working, item.student_id)
-            if item.date.strftime("%Y-%m") < s["start_month"]:
+            month = item.date.isoformat()[:7]
+            if month < s["start_month"]:
                 raise DomainError(422, "Дата оплаты раньше начала обучения")
             rate, rate_date, source = Decimal(1), None, None
             base = original
@@ -459,7 +462,6 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                     raise DomainError(422, "Сумма в UZS выходит за допустимый диапазон")
             if len(working["payments"]) >= MAX_PAYMENTS:
                 raise DomainError(422, "Payment limit reached")
-            month = item.date.strftime("%Y-%m")
             start, end = _month_bounds(month)
             paid = sum(
                 _cents(p["base_amount"])
@@ -486,6 +488,8 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                 "rate_date": rate_date,
                 "rate_source": source,
                 "date": item.date.isoformat(),
+                "voided_at": None,
+                "void_reason": None,
             }
             working["payments"].append(payment)
             working["next_payment"] += 1

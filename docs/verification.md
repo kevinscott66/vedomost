@@ -123,3 +123,19 @@ Mobile tap regression: after the hit-box fix,72 real pay-button clicks (3student
 The read-only review found two reproducible UI races. Correction now keeps its blocking dialog open through the report refresh, closing only immediately before preparing the replacement draft. The regression checks that the dialog cannot be closed during that wait and that a subsequent different payment retains its fields and retry key after a failed request.
 
 Hosted session initialization now has a15-second deadline covering the Web Lock wait, fetch and response body. Expiration aborts the pending operation and clears the shared initialization promise so concurrent retries share a new attempt. Tests separately stall the fetch, JSON body and lock queue; all recover on retry. Existing two-tab cookie serialization remains covered. Full checks:92Python and46Node tests pass, Ruff check/format pass. No database or stored payment change is required.
+
+## Исправления по полному аудиту — 29 октября 2026
+
+Локальные изменения после опубликованной версии `19e4b45`:
+
+- Консоль API ограничивает ожидание ответа и тела 20 секундами, снимает блокировку управления и не повторяет записывающий запрос автоматически. Тайм-аут сообщает о неизвестном результате операции.
+- Кнопки расчёта долга озвучивают ученика, действие и отображаемую сумму с валютой. Стрелки месяца восстанавливают пустое/некорректное поле относительно текущего локального месяца и соблюдают пределы 0001–9999.
+- Выбор `?lang=ru|uz|en` работает при запрете localStorage. Консоль явно обозначена как подмножество API со ссылкой на полную схему.
+- Cloud API возвращает отсутствующие поля отмены активных оплат как `null`, включая чтение прежних сеансов и повтор по ключу. Исторические снимки журнала не переписываются. Месяц оплаты извлекается из ISO-даты без зависимости от системного strftime.
+- CI устанавливает корневой lock-файл, фиксирует Node22 и включает Python3.11/3.13; эти два задания CI в данном проходе ещё не запускались. Облачные зависимости остаются отдельными, со своей средой выполнения.
+
+Проверено на Python3.13: **109 pytest**, **58 Node tests**, Ruff check/format, Cloudflare asset build и `git diff --check` — PASS. Есть прежнее предупреждение Starlette о будущем переходе тестового клиента с httpx на httpx2. Новые регрессии проверяют зависание fetch/тела, отсутствие автоматического повтора, журнал/пагинацию/устаревшие ответы/языки, откат позднего сбоя миграции, атомарный отказ пяти операций при лимите событий, старые валютные записи и крайние годы.
+
+В браузере локальный сервер с отдельной вымышленной БД: очистка месяца → стрелка восстановила корректный ноябрь2026; RU/EN/UZ сменили подписи и доступные имена; переключение темы сохранило данные; GET из API-консоли вернул200 и разблокировал кнопку. Это точечная проверка Chromium, а не новая полная матрица устройств.
+
+Оставшиеся отдельные проверки: физический Safari/iPhone и Firefox; нагрузка и конкуренция реального Worker/D1; ограничение размера потокового ответа поставщика курсов до полного чтения; согласование/проверка облачной матрицы зависимостей. Эти пункты не объявлены выполненными. Экспорт, история тарифов и атомарная замена взноса остаются возможным развитием вне исходного ТЗ.

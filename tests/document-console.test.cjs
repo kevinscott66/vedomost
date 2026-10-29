@@ -48,7 +48,7 @@ class Element {
   }
 }
 
-test("API console clears and disables stale ID/month validation after route changes", async () => {
+function runtime(fetchImpl) {
   const elements = new Map();
   const inputs = [];
   const forms = [];
@@ -57,7 +57,15 @@ test("API console clears and disables stale ID/month validation after route chan
     return elements.get(id);
   };
   const requests = [];
+  const timers = new Map();
   const context = {
+    AbortController,
+    setTimeout: (callback, delay) => {
+      const id = Symbol();
+      timers.set(id, { callback, delay });
+      return id;
+    },
+    clearTimeout: (id) => timers.delete(id),
     document: {
       body: { dataset: { document: "docs" } },
       getElementById: getElement,
@@ -83,7 +91,7 @@ test("API console clears and disables stale ID/month validation after route chan
     },
     fetch: async (path, options) => {
       requests.push({ path, options });
-      return { status: 200, text: async () => "[]" };
+      return fetchImpl ? fetchImpl(path, options) : { status: 200, text: async () => "[]" };
     },
     Date,
     URLSearchParams,
@@ -96,6 +104,15 @@ test("API console clears and disables stale ID/month validation after route chan
   const route = form.children.find((child) => child.tagName === "LABEL")
     .children[0];
   const [id, month] = inputs;
+  return { form, route, id, month, requests, timers,
+    language: getElement("language"),
+    submit: form.children.find(child => child.tagName === "BUTTON"),
+    output: getElement("document-content").children.at(-1).children.at(-1),
+  };
+}
+
+test("API console clears and disables stale ID/month validation after route changes", async () => {
+  const { form, route, id, month, requests } = runtime();
 
   route.value = "GET /students/{id}";
   await route.fire("change");
@@ -124,4 +141,45 @@ test("API console clears and disables stale ID/month validation after route chan
     requests.map((request) => request.path),
     ["/students", "/students"],
   );
+});
+
+for (const stall of ["fetch", "body"]) {
+  test(`API console bounds stalled ${stall}, releases controls and never retries a mutation`, async () => {
+    let complete;
+    const stalled = new Promise(resolve => { complete = resolve; });
+    const app = runtime(() => stall === "fetch" ? stalled : { status: 200, text: () => stalled });
+    app.route.value = "POST /payments";
+    await app.route.fire("change");
+    const submission = app.form.fire("submit");
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(app.submit.disabled, true);
+    assert.equal(app.language.disabled, true);
+    await app.form.fire("submit");
+    assert.equal(app.requests.length, 1);
+    assert.equal(app.requests[0].options.signal.aborted, false);
+    const timer = [...app.timers.values()][0];
+    assert.equal(timer.delay, 20000);
+    timer.callback();
+    await submission;
+    assert.equal(app.requests[0].options.signal.aborted, true);
+    assert.equal(app.submit.disabled, false);
+    assert.equal(app.language.disabled, false);
+    assert.equal(app.output.textContent, "requestTimeout");
+    assert.equal(app.timers.size, 0);
+    complete(stall === "fetch" ? { status: 200, text: async () => "late result" } : "late result");
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(app.requests.length, 1);
+    assert.equal(app.output.textContent, "requestTimeout");
+  });
+}
+
+test("API console clears its deadline after success or transport failure", async () => {
+  for (const fail of [false, true]) {
+    const app = runtime(() => fail ? Promise.reject(new Error("offline")) : { status: 201, text: async () => '{"id":1}' });
+    await app.form.fire("submit");
+    assert.equal(app.timers.size, 0);
+    assert.equal(app.submit.disabled, false);
+    assert.equal(app.language.disabled, false);
+    assert.equal(app.output.textContent, fail ? "requestError" : 'HTTP 201\n{\n  "id": 1\n}');
+  }
 });

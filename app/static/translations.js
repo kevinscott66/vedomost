@@ -167,7 +167,7 @@ window.VEDOMOST_TRANSLATIONS = {
     thirdParty: "Лицензии сторонних компонентов",
     openapi: "Схема OpenAPI",
     apiIntro:
-      "Справочник локального API. Запросы выполняются к тому же серверу, на котором открыто приложение.",
+      "Консоль основных операций API. Запросы выполняются к серверу приложения. Полный список маршрутов, включая журнал, расчёт и отмену оплат, — в схеме OpenAPI.",
     apiStudents: "Ученики",
     apiPayments: "Оплаты",
     apiDebtors: "Задолженность",
@@ -364,7 +364,7 @@ window.VEDOMOST_TRANSLATIONS = {
     thirdParty: "Third-party licences",
     openapi: "OpenAPI schema",
     apiIntro:
-      "Local API reference. Requests target the same server that serves this application.",
+      "Console for core API operations. Requests target this application’s server. The OpenAPI schema lists all routes, including activity, statements and payment cancellation.",
     apiStudents: "Students",
     apiPayments: "Payments",
     apiDebtors: "Outstanding balances",
@@ -562,7 +562,7 @@ window.VEDOMOST_TRANSLATIONS = {
     thirdParty: "Uchinchi tomon litsenziyalari",
     openapi: "OpenAPI sxemasi",
     apiIntro:
-      "Mahalliy API qo‘llanmasi. So‘rovlar ilova ishlayotgan serverga yuboriladi.",
+      "Asosiy API amallari konsoli. So‘rovlar ilova serveriga yuboriladi. Barcha yo‘llar, jumladan jurnal, hisob-kitob va to‘lovni bekor qilish, OpenAPI sxemasida keltirilgan.",
     apiStudents: "O‘quvchilar",
     apiPayments: "To‘lovlar",
     apiDebtors: "Qarzdorlik",

@@ -303,7 +303,7 @@ function renderDebtors(report) {
     const paid = node("div", number(s.paid), "amount");
     paid.setAttribute("data-label", t("paid"));
     const debt = button(number(s.debt), () => openStatement(s, report.month), "amount debt statement-trigger");
-    debt.setAttribute("aria-label", t("explainDebtFor", { name: s.name }));
+    debt.setAttribute("aria-label", t("explainDebtFor", { name: s.name }) + ": " + debt.textContent);
     debt.setAttribute("aria-haspopup", "dialog");
     debt.setAttribute("data-label", t("remaining"));
     const pay = button(
@@ -384,7 +384,9 @@ function monthLabel() {
 }
 $("month").addEventListener("change", refresh);
 function moveMonth(offset) {
-  const [year, month] = $("month").value.split("-").map(Number);
+  const value = $("month").value;
+  const valid = /^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(value);
+  const [year, month] = (valid ? value : localDate().slice(0, 7)).split("-").map(Number);
   const index = year * 12 + month - 1 + offset;
   const nextYear = Math.floor(index / 12),
     nextMonth = (index % 12) + 1;

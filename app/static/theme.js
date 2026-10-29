@@ -7,7 +7,8 @@ try {
 } catch {}
 try {
   const queryLanguage = new URLSearchParams(location.search).get("lang");
-  const savedLanguage = localStorage.getItem("vedomost-language");
+  let savedLanguage;
+  try { savedLanguage = localStorage.getItem("vedomost-language"); } catch {}
   const language = ["ru", "uz", "en"].includes(queryLanguage)
     ? queryLanguage
     : savedLanguage;

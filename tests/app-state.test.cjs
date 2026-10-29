@@ -567,3 +567,52 @@ test("correction keeps the modal blocking other drafts until preparation complet
   await app.respond(app.requests.at(-1), {detail: "failure"}, 503);
   await retry;
 });
+
+test("debt action accessible name includes the displayed localized amount and currency", async () => {
+  const app = await runtime();
+  for (const [locale, unit] of [["en-US", "UZS"], ["ru-RU", "₽"], ["uz-UZ", "$"]]) {
+    app.context.window.i18n.locale = locale;
+    app.context.window.currency.unit = unit;
+    await app.display("currencychange");
+    const debt = app.element("debt-list").querySelectorAll(".statement-trigger")[0];
+    assert.equal(debt.attributes["aria-label"], 'explainDebtFor{"name":"Alpha"}: ' + debt.textContent);
+    assert.ok(debt.textContent.endsWith("\u00a0" + unit));
+    assert.equal(debt.attributes["aria-haspopup"], "dialog");
+  }
+});
+
+test("month arrows recover empty or malformed values and preserve calendar boundaries", async () => {
+  const app = await runtime();
+  const today = new Date();
+  const currentIndex = today.getFullYear() * 12 + today.getMonth();
+  const formatIndex = index => `${String(Math.floor(index / 12)).padStart(4, "0")}-${String(index % 12 + 1).padStart(2, "0")}`;
+  const cases = [
+    ["", "previous-month", formatIndex(currentIndex - 1)],
+    ["", "next-month", formatIndex(currentIndex + 1)],
+    ["NaN-NaN", "next-month", formatIndex(currentIndex + 1)],
+    ["0000-12", "previous-month", formatIndex(currentIndex - 1)],
+    ["2026-13", "next-month", formatIndex(currentIndex + 1)],
+    ["10000-01", "next-month", formatIndex(currentIndex + 1)],
+    ["0001-02", "previous-month", "0001-01"],
+    ["0099-12", "next-month", "0100-01"],
+    ["9999-11", "next-month", "9999-12"],
+  ];
+  for (const [value, button, expected] of cases) {
+    app.element("month").value = value;
+    const start = app.requests.length;
+    await app.element(button).fire("click");
+    assert.equal(app.element("month").value, expected, `${value} ${button}`);
+    const requests = app.requests.slice(start);
+    assert.equal(requests.length, 2);
+    await app.respond(requests[0], people);
+    await app.respond(requests[1], report(expected));
+    assert.equal(app.element("month-display").textContent, expected);
+  }
+  for (const [value, button] of [["0001-01", "previous-month"], ["9999-12", "next-month"]]) {
+    app.element("month").value = value;
+    const before = app.requests.length;
+    await app.element(button).fire("click");
+    assert.equal(app.element("month").value, value);
+    assert.equal(app.requests.length, before);
+  }
+});

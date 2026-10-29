@@ -63,3 +63,17 @@ test("all keys and regional notices exist; unsupported language is ignored", () 
   c.window.i18n.setLanguage("unknown");
   assert.equal(c.window.i18n.language, "ru");
 });
+
+for (const language of ["ru", "uz", "en"]) {
+  test(`query language ${language} works when browser storage is blocked`, () => {
+    const context = {
+      document: { documentElement: { dataset: {} } },
+      localStorage: { getItem() { throw new Error("Blocked storage"); } },
+      location: { search: `?lang=${language}` },
+      URLSearchParams,
+    };
+    vm.runInNewContext(fs.readFileSync("app/static/theme.js", "utf8"), context);
+    assert.equal(context.document.documentElement.dataset.language, language);
+    assert.equal(context.document.documentElement.lang, language === "uz" ? "uz-Latn" : language);
+  });
+}

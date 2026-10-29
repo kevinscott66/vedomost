@@ -1,6 +1,11 @@
 """Cancellation and the activity trail must agree in both persistence adapters."""
 
+import copy
+import json
+import sqlite3
+import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 
 import pytest
 from fastapi.testclient import TestClient
@@ -39,6 +44,146 @@ def new_student(c, base, name="Activity student"):
     )
     assert r.status_code == 201, r.text
     return r.json()
+
+
+def test_active_payment_contract_matches_on_add_replay_history_and_statement(ledger):
+    c, base, _ = ledger
+    s = new_student(c, base)
+    payload = {"student_id": s["id"], "amount": "25", "date": "2026-10-15"}
+    headers = {"Idempotency-Key": "active-contract-retry-key"}
+    payment = c.post(base + "/payments", json=payload, headers=headers).json()
+    assert payment["voided_at"] is None and payment["void_reason"] is None
+    assert c.post(base + "/payments", json=payload, headers=headers).json() == payment
+    assert c.get(base + f"/students/{s['id']}/payments").json() == [payment]
+    statement = c.get(base + f"/students/{s['id']}/statement?month=2026-10").json()
+    assert statement["payments"] == [payment]
+    event = c.get(base + "/activity").json()["items"][0]
+    assert event["detail"]["payment"] == payment
+
+
+@pytest.mark.parametrize("day", ["0001-01-01", "0099-12-31", "0999-07-15", "9999-12-31"])
+def test_payment_month_supports_entire_calendar_range(ledger, day):
+    c, base, _ = ledger
+    s = new_student(c, base)
+    student = {k: v for k, v in s.items() if k != "id"}
+    assert (
+        c.put(base + f"/students/{s['id']}", json={**student, "start_month": day[:7]}).status_code
+        == 200
+    )
+    r = c.post(base + "/payments", json={"student_id": s["id"], "amount": "25", "date": day})
+    assert r.status_code == 201, r.text
+    statement = c.get(base + f"/students/{s['id']}/statement?month={day[:7]}").json()
+    assert statement["paid"] == "25.00" and statement["debt"] == "75.00"
+
+
+def test_legacy_cloud_payment_responses_preserve_stored_history():
+    from cloud.domain import handle, seed
+
+    state = seed()
+    payment = state["payments"][0]
+    payment.pop("voided_at")
+    payment.pop("void_reason")
+    payload = {"student_id": 1, "amount": payment["amount"], "date": payment["date"]}
+    state["requests"]["legacy-contract-key"] = {
+        "payload": f"1|40000000|{payment['date']}",
+        "payment_id": payment["id"],
+    }
+    state["activity"] = [{"id": 1, "detail": {"payment": copy.deepcopy(payment)}}]
+    before = copy.deepcopy(state)
+    for method, path, kwargs in [
+        ("GET", "/students/1/payments", {}),
+        ("GET", "/students/1/statement", {"query": {"month": payment["date"][:7]}}),
+        ("POST", "/payments", {"body": payload, "idempotency_key": "legacy-contract-key"}),
+    ]:
+        _, response, changed, returned = handle(state, method, path, **kwargs)
+        result = (
+            response[0] if isinstance(response, list) else response.get("payments", [response])[0]
+        )
+        assert result["voided_at"] is None and result["void_reason"] is None
+        assert not changed and returned is state and state == before
+    assert handle(state, "GET", "/activity")[1]["items"] == before["activity"]
+
+
+@pytest.mark.parametrize(
+    "operation", ["student.add", "student.update", "student.delete", "payment.add", "payment.void"]
+)
+def test_cloud_activity_limit_rolls_back_entire_write(request, monkeypatch, operation):
+    c, _, db, _ = request.getfixturevalue("hosted")
+    base = "/demos/vedomost"
+    assert c.post(base + "/session", json={}).status_code == 200
+    s = new_student(c, base)
+    student = {k: v for k, v in s.items() if k != "id"}
+    payload = {"student_id": s["id"], "amount": "25", "date": "2026-10-15"}
+    if operation == "payment.void":
+        payment = c.post(base + "/payments", json=payload).json()
+        method, path, body = "POST", f"/payments/{payment['id']}/void", {"reason": "Wrong amount"}
+    elif operation == "payment.add":
+        method, path, body = "POST", "/payments", payload
+    elif operation == "student.add":
+        method, path, body = "POST", "/students", student
+    elif operation == "student.update":
+        method, path, body = "PUT", f"/students/{s['id']}", {**student, "name": "Changed"}
+    else:
+        method, path, body = "DELETE", f"/students/{s['id']}", None
+    before = tuple(db.execute("SELECT state,version FROM sessions").fetchone())
+    domain = sys.modules["domain"]
+    with monkeypatch.context() as patch:
+        patch.setattr(domain, "MAX_EVENTS", len(json.loads(before[0])["activity"]))
+        failed = c.request(
+            method, base + path, json=body, headers={"Idempotency-Key": "limit-retry-payment-key"}
+        )
+    assert failed.status_code == 422
+    assert "Activity limit" in failed.text
+    assert tuple(db.execute("SELECT state,version FROM sessions").fetchone()) == before
+    retried = c.request(
+        method, base + path, json=body, headers={"Idempotency-Key": "limit-retry-payment-key"}
+    )
+    assert retried.status_code in {200, 201, 204}, retried.text
+    after = json.loads(db.execute("SELECT state FROM sessions").fetchone()[0])
+    assert len(after["activity"]) == len(json.loads(before[0])["activity"]) + 1
+
+
+def test_failed_schema_migration_rolls_back_columns_data_and_version(tmp_path, monkeypatch):
+    database = Database(tmp_path / "migration-failure.sqlite3")
+    with database.connect() as db:
+        db.executescript("""
+            CREATE TABLE students(id INTEGER PRIMARY KEY,name TEXT,phone TEXT,
+                group_name TEXT,monthly_fee_cents INTEGER);
+            CREATE TABLE payments(id INTEGER PRIMARY KEY,student_id INTEGER,
+                amount_cents INTEGER,paid_on TEXT);
+            INSERT INTO students VALUES(1,'A','000','B',10000);
+            INSERT INTO payments VALUES(1,1,5000,'2020-02-29');
+            PRAGMA user_version=1;
+        """)
+        before = list(db.iterdump())
+    connect = database.connect
+
+    @contextmanager
+    def failing_connect(**kwargs):
+        with connect(**kwargs) as db:
+            # Fail after all ALTERs and data backfills have run.
+            db.set_authorizer(
+                lambda action, name, *_: (
+                    sqlite3.SQLITE_DENY
+                    if action == sqlite3.SQLITE_CREATE_TABLE and name == "activity"
+                    else sqlite3.SQLITE_OK
+                )
+            )
+            yield db
+
+    with monkeypatch.context() as patch:
+        patch.setattr(database, "connect", failing_connect)
+        with pytest.raises(sqlite3.DatabaseError, match="not authorized"):
+            database.initialize()
+    with database.connect() as db:
+        assert list(db.iterdump()) == before
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 1
+    database.initialize()
+    with database.connect() as db:
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
+        row = db.execute("SELECT * FROM payments").fetchone()
+        assert row["original_amount_cents"] == 5000 and row["voided_at"] is None
+        assert db.execute("SELECT COUNT(*) FROM activity").fetchone()[0] == 0
 
 
 def test_void_preserves_money_restores_debt_and_logs_once(ledger):

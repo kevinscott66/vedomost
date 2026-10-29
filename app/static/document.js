@@ -102,6 +102,7 @@
     configure();
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (submit.disabled) return;
       const [method, template] = endpoint.value.split(" ");
       if (
         !idField.hidden &&
@@ -127,21 +128,32 @@
       submit.disabled = true;
       document.getElementById("language").disabled = true;
       output.textContent = t("loading");
+      const controller = new AbortController();
+      let expired = false;
+      let rejectDeadline;
+      const deadline = new Promise((_, reject) => { rejectDeadline = reject; });
+      const timeout = setTimeout(() => {
+        expired = true;
+        controller.abort();
+        rejectDeadline(new Error("timeout"));
+      }, 20000);
       try {
-        const result = await fetch(path, {
+        const result = await Promise.race([fetch(path, {
           method,
           headers: { "Content-Type": "application/json" },
           body: payload,
-        });
-        const text = await result.text();
+          signal: controller.signal,
+        }), deadline]);
+        const text = await Promise.race([result.text(), deadline]);
         let formatted = text;
         try {
           formatted = JSON.stringify(JSON.parse(text), null, 2);
         } catch {}
         output.textContent = "HTTP " + result.status + "\n" + formatted;
       } catch {
-        output.textContent = t("requestError");
+        output.textContent = t(expired ? "requestTimeout" : "requestError");
       } finally {
+        clearTimeout(timeout);
         submit.disabled = false;
         document.getElementById("language").disabled = false;
       }
