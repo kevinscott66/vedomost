@@ -15,7 +15,7 @@ function response(ok = true) {
   return { ok, json: async () => ({}) };
 }
 
-function setup(nativeFetch) {
+function setup(nativeFetch, navigator = { locks: { request: (_name, callback) => callback() } }) {
   const listeners = {};
   const main = { prepend: () => {} };
   const document = {
@@ -28,6 +28,7 @@ function setup(nativeFetch) {
   const window = {
     location: { href: "https://demo.example/demos/vedomost/", origin: "https://demo.example" },
     fetch: nativeFetch,
+    navigator,
     addEventListener: (event, callback) => {
       listeners[event] = callback;
     },
@@ -109,4 +110,47 @@ test("cloud statement requests retain their month and use the demo session path"
     "/demos/vedomost/session",
     "/demos/vedomost/students/3/statement?month=2026-10",
   ]);
+});
+
+
+test("first bootstrap in two tabs is serialized until cookie installation", async () => {
+  let tail = Promise.resolve();
+  const navigator = { locks: { request: (_name, callback) => {
+    const current = tail.then(callback);
+    tail = current.catch(() => {});
+    return current;
+  } } };
+  let cookie = null;
+  let creations = 0;
+  let release;
+  const seen = [];
+  const fetch = async (url) => {
+    if (url.endsWith("/session")) {
+      if (!cookie) {
+        creations++;
+        await new Promise(resolve => { release = resolve; });
+        cookie = "shared-session";
+      }
+    } else seen.push(cookie);
+    return response();
+  };
+  const a = setup(fetch, navigator);
+  const b = setup(fetch, navigator);
+  const requests = [a.fetch("/students"), b.fetch("/students")];
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(creations, 1);
+  release();
+  await Promise.all(requests);
+  assert.equal(creations, 1);
+  assert.deepEqual(seen, ["shared-session", "shared-session"]);
+});
+
+test("without Web Locks bootstrap requires an existing session", async () => {
+  let headers;
+  const window = setup(async (url, init) => {
+    if (url.endsWith("/session")) headers = init.headers;
+    return response();
+  }, {});
+  await window.fetch("/students");
+  assert.equal(headers["X-Demo-Require-Session"], "1");
 });

@@ -200,6 +200,10 @@ async def dispatch(path: str, request: Request):
                 )
                 if renewed:
                     return session_response(token, int(field(renewed, "expires")))
+            if request.headers.get("x-demo-require-session") == "1":
+                return output(
+                    {"detail": "A browser with Web Locks support is required to start a demo"}, 409
+                )
             ip = request.headers.get("cf-connecting-ip", "local")
             if not await quota(db, "create:" + ip, 20, 3600) or not await quota(
                 db, "global-create", 300, 3600

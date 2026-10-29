@@ -155,3 +155,13 @@ def test_reopening_demo_renews_cookie_and_preserves_ledger(hosted):
     assert a.post(BASE + "/session", json={}).status_code == 200
     assert a.cookies.get(module.COOKIE) != token
     assert len(a.get(BASE + "/students").json()) == 4
+
+
+def test_bootstrap_without_cross_tab_lock_only_renews_existing_session(hosted):
+    a, _, db, _ = hosted
+    headers = {"X-Demo-Require-Session": "1"}
+    assert a.post(BASE + "/session", json={}, headers=headers).status_code == 409
+    assert db.execute("select count(*) from sessions").fetchone()[0] == 0
+    init(a)
+    assert a.post(BASE + "/session", json={}, headers=headers).status_code == 200
+    assert db.execute("select count(*) from sessions").fetchone()[0] == 1

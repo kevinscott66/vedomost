@@ -4,23 +4,37 @@
   const nativeFetch = window.fetch.bind(window);
   const sessionUrl = `${base}/session`;
 
+  function startSession() {
+    const locks = window.navigator?.locks;
+    const request = () => nativeFetch(sessionUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Without cross-tab locking, only renew an existing cookie; never race to create one.
+        ...(!locks?.request ? { "X-Demo-Require-Session": "1" } : {}),
+      },
+      body: "{}",
+      credentials: "same-origin",
+    });
+    // Cookie installation completes before fetch resolves and releases this origin-wide lock.
+    return locks?.request
+      ? locks.request("vedomost-session-bootstrap", request)
+      : request();
+  }
+
   // Share each in-flight session request; clear failures so a later app retry can try again.
   let sessionReady = null;
   function ensureSession() {
     if (!sessionReady) {
       let tracked;
       tracked = Promise.resolve()
-        .then(() =>
-          nativeFetch(sessionUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: "{}",
-            credentials: "same-origin",
-          }),
-        )
+        .then(startSession)
         .then((response) => {
-          if (!response.ok)
-            throw new Error("The demo session could not be started.");
+          if (!response.ok) {
+            const error = new Error("The demo session could not be started.");
+            error.unsupportedBrowser = response.status === 409;
+            throw error;
+          }
           return response.json();
         })
         .catch((error) => {
@@ -81,6 +95,14 @@
       const target = document.getElementById("global-error");
       if (!target) return;
       target.hidden = false;
+      if (error.unsupportedBrowser) {
+        target.textContent = window.i18n?.language === "uz"
+          ? "Demoni boshlash uchun brauzeringizni yangilang."
+          : window.i18n?.language === "en"
+            ? "Update your browser to start the demo."
+            : "Обновите браузер, чтобы начать работу с демо.";
+        return;
+      }
       target.textContent =
         window.i18n?.language === "uz"
           ? "Demo seansini boshlash imkoni bo‘lmadi. Sahifani qayta yuklang."
