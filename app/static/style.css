@@ -398,6 +398,24 @@ select {
   font-size: 12px;
   line-height: 1.5;
 }
+/* iOS date controls otherwise keep their native intrinsic width and centred value. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+input[type="date"]::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
 input::placeholder {
   color: var(--muted);
   opacity: 1;
