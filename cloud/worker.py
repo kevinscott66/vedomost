@@ -232,7 +232,9 @@ async def dispatch(path: str, request: Request):
         return output(await quote(db))
     api_path = "/" + path.rstrip("/")
     if (
-        path == "debtors"
+        path == "activity"
+        or path.startswith("payments/")
+        or path == "debtors"
         or path == "payments"
         or path == "students"
         or path.startswith("students/")

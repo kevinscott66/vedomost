@@ -53,7 +53,7 @@
     const url = new URL(raw, window.location.href);
     return (
       url.origin === window.location.origin &&
-      /^\/(?:students(?:\/[^/]+(?:\/(?:payments|statement))?)?|payments|debtors|exchange-rates)$/.test(url.pathname) &&
+      /^\/(?:students(?:\/[^/]+(?:\/(?:payments|statement))?)?|payments(?:\/[0-9]+\/void)?|activity|debtors|exchange-rates)$/.test(url.pathname) &&
       !url.pathname.startsWith(`${base}/`) &&
       !url.pathname.startsWith("/static/")
     );

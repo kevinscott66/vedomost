@@ -103,7 +103,7 @@ def test_schema_upgrade_preserves_records_and_constraints(tmp_path):
             "FROM payments"
         ).fetchone()
         assert tuple(legacy) == (20000000, "UZS", "1", None, None)
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 4
         with pytest.raises(sqlite3.IntegrityError):
             db.execute("DELETE FROM students WHERE id=1")
 

@@ -56,57 +56,76 @@ function button(text, action, cls = "text-button") {
   return b;
 }
 async function request(path, options = {}) {
-  let response;
+  const controller = new AbortController();
+  let expired = false;
+  let rejectDeadline;
+  const deadline = new Promise((_, reject) => { rejectDeadline = reject; });
+  const timeout = setTimeout(() => {
+    expired = true;
+    controller.abort();
+    rejectDeadline(new Error(t("requestTimeout")));
+  }, 20000);
   try {
-    response = await fetch(path, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...options.headers },
-    });
-  } catch {
-    throw new Error(t("requestError"));
-  }
-  if (!response.ok) {
-    let message = t("requestError");
+    let response;
     try {
-      const data = await response.json();
-      if (typeof data.detail === "string") {
-        const known = {
-          "Ученик не найден": "studentMissing",
-          "Месяц должен быть в формате YYYY-MM": "invalidMonth",
-          "Укажите существующий месяц с 0001-01 по 9999-12": "invalidMonth",
-          "Нет свежего официального курса для оплаты": "paymentRateUnavailable",
-          "Официальный курс недоступен": "paymentRateUnavailable",
-          "Сумма в UZS выходит за допустимый диапазон": "paymentAmountLimit",
-          "Monthly payment total exceeds storage limit": "paymentTotalLimit",
-          "Idempotency key used for a different payment": "paymentRetryConflict",
-          "Дата оплаты раньше начала обучения": "paymentBeforeStart",
-          "Начало обучения позже существующих оплат": "startAfterPayments",
-          "Нельзя удалить ученика с оплатами: история должна сохраниться":
-            "historyProtected",
-        };
-        message = known[data.detail]
-          ? t(known[data.detail])
-          : response.status === 422
-            ? t("checkPaymentFields")
-            : t("requestError");
-      } else if (Array.isArray(data.detail))
-        message = t("checkFields", {
-          fields: data.detail
-            .map((e) =>
-              t(
-                {
-                  student_id: "student",
-                  monthly_fee: "monthlyFee",
-                  start_month: "startMonth",
-                }[e.loc.at(-1)] || e.loc.at(-1),
-              ),
-            )
-            .join(", "),
-        });
-    } catch {}
-    throw new Error(message);
-  }
-  return response.status === 204 ? null : response.json();
+      response = await Promise.race([fetch(path, {
+        ...options,
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json", ...options.headers },
+      }), deadline]);
+    } catch {
+      throw new Error(t("requestError"));
+    }
+    if (!response.ok) {
+      let message = t("requestError");
+      try {
+        const data = await Promise.race([response.json(), deadline]);
+        if (typeof data.detail === "string") {
+          const known = {
+            "Ученик не найден": "studentMissing",
+            "Payment not found": "paymentMissing",
+            "Payment already voided": "alreadyVoided",
+            "Activity limit reached": "activityLimit",
+            "Demo storage limit reached": "activityLimit",
+            "Месяц должен быть в формате YYYY-MM": "invalidMonth",
+            "Укажите существующий месяц с 0001-01 по 9999-12": "invalidMonth",
+            "Нет свежего официального курса для оплаты": "paymentRateUnavailable",
+            "Официальный курс недоступен": "paymentRateUnavailable",
+            "Сумма в UZS выходит за допустимый диапазон": "paymentAmountLimit",
+            "Monthly payment total exceeds storage limit": "paymentTotalLimit",
+            "Idempotency key used for a different payment": "paymentRetryConflict",
+            "Дата оплаты раньше начала обучения": "paymentBeforeStart",
+            "Начало обучения позже существующих оплат": "startAfterPayments",
+            "Нельзя удалить ученика с оплатами: история должна сохраниться":
+              "historyProtected",
+          };
+          message = known[data.detail]
+            ? t(known[data.detail])
+            : response.status === 422
+              ? t("checkPaymentFields")
+              : t("requestError");
+        } else if (Array.isArray(data.detail))
+          message = t("checkFields", {
+            fields: data.detail
+              .map((e) =>
+                t(
+                  {
+                    student_id: "student",
+                    monthly_fee: "monthlyFee",
+                    start_month: "startMonth",
+                  }[e.loc.at(-1)] || e.loc.at(-1),
+                ),
+              )
+              .join(", "),
+          });
+      } catch {}
+      throw new Error(message);
+    }
+    return response.status === 204 ? null : await Promise.race([response.json(), deadline]);
+  } catch (error) {
+    if (expired) throw new Error(t("requestTimeout"));
+    throw error;
+  } finally { clearTimeout(timeout); }
 }
 function message(id, text, error = false) {
   if (id === "payment-message") paymentPeriodNotice = false;
@@ -130,7 +149,7 @@ function clearValidation(form) {
   });
 }
 function syncPaymentActions() {
-  document.querySelectorAll(".pay-button").forEach((control) => {
+  document.querySelectorAll(".pay-button, .payment-actions button").forEach((control) => {
     control.disabled = paymentPending;
   });
 }
@@ -296,6 +315,7 @@ function renderDebtors(report) {
         $("pay-amount").value = s.debt;
         $("pay-currency").value = "UZS";
         paymentContextMonth = report.month;
+        activateView("debts-tab");
         if ($("pay-date").value.slice(0, 7) !== report.month)
           $("pay-date").value = "";
         paymentDateBounds();
@@ -345,6 +365,7 @@ async function refresh() {
     lastReport = report;
     reportStatus = "ready";
     renderDebtors(report);
+    if (!$("activity-view").hidden) window.activityJournal?.load();
   } catch (e) {
     if (ticket !== generation) return;
     lastReport = null;
@@ -374,21 +395,20 @@ function moveMonth(offset) {
 }
 $("previous-month").onclick = () => moveMonth(-1);
 $("next-month").onclick = () => moveMonth(1);
-for (const [tab, other, view, otherView] of [
-  ["debts-tab", "students-tab", "debts-view", "students-view"],
-  ["students-tab", "debts-tab", "students-view", "debts-view"],
-])
-  $(tab).onclick = () => {
-    $("page-title").textContent =
-      tab === "debts-tab" ? t("paymentsHeading") : t("apiStudents");
-    document
-      .querySelector("main")
-      .classList.toggle("students-mode", tab === "students-tab");
-    $(tab).setAttribute("aria-pressed", "true");
-    $(other).setAttribute("aria-pressed", "false");
-    $(view).hidden = false;
-    $(otherView).hidden = true;
-  };
+const views = { "debts-tab": "debts-view", "students-tab": "students-view", "activity-tab": "activity-view" };
+function activateView(tab) {
+  for (const [id, view] of Object.entries(views)) {
+    $(id).setAttribute("aria-pressed", String(id === tab));
+    $(view).hidden = id !== tab;
+  }
+  $("page-title").textContent = t(tab === "debts-tab" ? "paymentsHeading" : tab === "activity-tab" ? "activityTitle" : "students");
+  document.querySelector("main").classList.toggle("students-mode", tab !== "debts-tab");
+  document.querySelector("main").classList.toggle("activity-mode", tab === "activity-tab");
+  $("page-description").dataset.i18n = tab === "activity-tab" ? "activityDescription" : "welcomeDescription";
+  $("page-description").textContent = t($("page-description").dataset.i18n);
+  if (tab === "activity-tab") window.activityJournal?.load();
+}
+for (const tab of Object.keys(views)) $(tab).onclick = () => activateView(tab);
 function editStudent(s = null) {
   ++studentDialogRevision;
   $("student-form").reset();
@@ -527,6 +547,10 @@ function renderStatement(statement) {
     const item = node("section", undefined, "statement-payment");
     const day = new Intl.DateTimeFormat(window.i18n.locale).format(new Date(p.date + "T12:00:00"));
     item.append(line(day, p.base_amount));
+    if (p.voided_at) {
+      item.classList.add("voided-payment");
+      item.append(node("p", t("paymentVoided") + " · " + p.void_reason, "void-reason"));
+    }
     if (p.currency !== "UZS") {
       item.append(node("p", paymentNumber(p.amount, p.currency) + " · " + t("bookedRate", {
         rate: new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 8 }).format(p.exchange_rate),
@@ -586,6 +610,13 @@ async function history(s) {
               : ""),
         ),
       );
+      if (p.currency !== "UZS" && p.exchange_rate) row.append(node("span", t("bookedRate", {
+        rate: new Intl.NumberFormat(window.i18n.locale, { maximumFractionDigits: 8 }).format(p.exchange_rate), unit: p.currency === "USD" ? "$" : "₽", date: p.rate_date, source: p.rate_source,
+      }), "void-reason"));
+      if (p.voided_at) {
+        row.classList.add("voided-payment");
+        row.append(node("span", t("paymentVoided") + " · " + p.void_reason, "void-reason"));
+      } else window.paymentActions?.append(row, p, s);
       $("history-list").append(row);
     }
   } catch (e) {
@@ -622,7 +653,7 @@ function refreshDisplay() {
   else renderReportStatus();
   monthLabel();
   $("page-title").textContent = t(
-    $("students-view").hidden ? "paymentsHeading" : "students",
+    !$("activity-view").hidden ? "activityTitle" : $("students-view").hidden ? "paymentsHeading" : "students",
   );
   $("student-title").textContent = t(
     $("student-id").value ? "editStudent" : "newStudent",

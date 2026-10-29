@@ -125,7 +125,7 @@ function report(month, name = "Alpha") {
     debtors: [{ ...student, paid: "0.00", debt: student.monthly_fee }],
   };
 }
-async function runtime() {
+async function runtime(ignoreAbort = false) {
   const ids = new Map();
   const element = (id) => {
     if (!ids.has(id)) ids.set(id, new Element());
@@ -153,8 +153,14 @@ async function runtime() {
   element("students-view").hidden = true;
   const events = new Element();
   const requests = [];
+  const timers = new Map();
   const context = {
     Intl,
+    AbortController,
+    setTimeout: (callback, delay) => {
+      const timer = setTimeout(callback, delay); timer.unref(); timers.set(timer, callback); return timer;
+    },
+    clearTimeout: (timer) => { timers.delete(timer); clearTimeout(timer); },
     Date,
     Event,
     crypto: { randomUUID: () => "test-key-" + requests.length },
@@ -177,9 +183,10 @@ async function runtime() {
         [...ids.values()].flatMap((node) => node.querySelectorAll(selector)),
     },
     fetch: (path, options) =>
-      new Promise((resolve, reject) =>
-        requests.push({ path, options, resolve, reject }),
-      ),
+      new Promise((resolve, reject) => {
+        if (!ignoreAbort) options.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+        requests.push({ path, options, resolve, reject });
+      }),
     window: {
       i18n: {
         locale: "en-US",
@@ -202,6 +209,7 @@ async function runtime() {
   await respond(requests[1], report(element("month").value));
   return {
     element,
+    expireRequests: () => [...timers.values()].forEach(callback => callback()),
     context,
     requests,
     respond,
@@ -472,4 +480,52 @@ test("debt detail uses a server statement and ignores a closed or superseded vie
   await app.respond(app.requests.at(-2), people);
   await app.respond(app.requests.at(-1), report(app.element("month").value));
   await changed;
+});
+
+test("RUB overpayment removes only its student and leaves other pay buttons usable", async () => {
+  const app = await runtime();
+  app.element("pay-student").value = "1";
+  app.element("pay-amount").value = "999999";
+  app.element("pay-currency").value = "RUB";
+  app.element("pay-date").value = "2026-10-29";
+  const submit = app.element("payment-form").fire("submit");
+  await app.respond(app.requests.at(-1), {id: 9, amount: "999999", currency: "RUB"});
+  const fresh = { month: app.element("month").value, total_debt: "100.00", debtors: [{ ...people[1], paid: "0.00", debt: "100.00" }] };
+  for (const req of app.requests.slice(-2)) await app.respond(req, req.path === "/students" ? people : fresh);
+  await submit;
+  assert.equal(app.payButtons().length, 1);
+  assert.equal(app.payButtons()[0].disabled, false);
+  await app.payButtons()[0].fire("click");
+  assert.equal(app.element("pay-student").value, "2");
+  assert.equal(app.element("pay-amount").value, "100.00");
+  assert.equal(app.element("pay-currency").value, "UZS");
+});
+
+
+test("stalled payment unlocks form and pay buttons while keeping retry key and draft", async () => {
+  const app = await runtime();
+  await app.payButtons()[0].fire("click");
+  const submit = app.element("payment-form").fire("submit");
+  const firstKey = app.requests.at(-1).options.headers["Idempotency-Key"];
+  app.expireRequests();
+  await submit;
+  assert.equal(app.payButtons()[0].disabled, false);
+  assert.equal(app.element("save-payment").disabled, false);
+  assert.match(app.element("payment-message").textContent, /requestTimeout/);
+  const retry = app.element("payment-form").fire("submit");
+  assert.equal(app.requests.at(-1).options.headers["Idempotency-Key"], firstKey);
+  await app.respond(app.requests.at(-1), {detail: "retry"}, 503);
+  await retry;
+});
+
+
+test("deadline unlocks even if a session wrapper ignores the abort signal", async () => {
+  const app = await runtime(true);
+  await app.payButtons()[0].fire("click");
+  const submit = app.element("payment-form").fire("submit");
+  app.expireRequests();
+  await submit;
+  assert.equal(app.element("save-payment").disabled, false);
+  assert.equal(app.payButtons()[0].disabled, false);
+  assert.match(app.element("payment-message").textContent, /requestTimeout/);
 });

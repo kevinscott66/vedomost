@@ -1,6 +1,7 @@
 window.VEDOMOST_LEGAL = {
   ru: {
     privacy: [
+      ["Журнал и отмена записей", "Для проверки операций сохраняются время действия, снимки полей ученика и сведения о добавлении или отмене оплаты, включая указанную причину. Удаление ученика не удаляет ранее созданные события журнала; отмена взноса не удаляет его исходную запись. Используйте только вымышленные сведения."],
       [
         "Область действия и автор",
         "Эта редакция описывает локальную демонстрационную версию «Ведомости» для ознакомления в контексте законодательства России. Автор программы — Павлович Александр Кириллович. Разработчик не предоставляет здесь облачный сервис учебного центра и автоматически не получает записи из вашей базы. Выбор языка меняет редакцию уведомления, а не определяет применимое право.",
@@ -65,6 +66,7 @@ window.VEDOMOST_LEGAL = {
   },
   uz: {
     privacy: [
+      ["Jurnal va bekor qilingan yozuvlar", "Amallarni tekshirish uchun vaqt, o‘quvchi maydonlari nusxalari hamda to‘lovni qo‘shish yoki bekor qilish tafsilotlari, shu jumladan kiritilgan sabab saqlanadi. O‘quvchini o‘chirish avvalgi jurnal hodisalarini yo‘q qilmaydi; to‘lovni bekor qilish uning asl yozuvini o‘chirmaydi. Faqat xayoliy ma’lumotlardan foydalaning."],
       [
         "Qo‘llanish doirasi va muallif",
         "Ushbu tahrir «Vedomost» mahalliy demo versiyasini O‘zbekiston qonunchiligi doirasida tanishtirish uchun tavsiflaydi. Dastur muallifi — Pavlovich Aleksandr Kirillovich. Ishlab chiquvchi bu yerda o‘quv markazining bulutli xizmatini ko‘rsatmaydi va mahalliy bazangizdagi qaydlarni avtomatik olmaydi. Til tanlash xabarnoma tahririni o‘zgartiradi, qo‘llaniladigan huquqni belgilamaydi.",
@@ -129,6 +131,7 @@ window.VEDOMOST_LEGAL = {
   },
   en: {
     privacy: [
+      ["Activity and voided records", "To review operations, the application stores timestamps, snapshots of student fields and payment creation or cancellation details, including the reason provided. Deleting a student does not erase earlier activity events; voiding a payment does not erase its original record. Use fictional data only."],
       [
         "Scope and developer",
         "This notice describes the local Vedomost demo, with EU/EEA and US supplements below. The software author is Alexander Kirillovich Pavlovich. The developer is not operating a hosted school service here and does not automatically receive your local ledger entries. Selecting a language selects a notice edition; applicable law depends on actual activities and jurisdiction.",

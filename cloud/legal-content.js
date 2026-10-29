@@ -3,6 +3,7 @@
 window.VEDOMOST_LEGAL = {
   ru: {
     privacy: [
+      ["Журнал и отмена записей", "Для проверки операций сохраняются время действия, снимки полей ученика и сведения о добавлении или отмене оплаты, включая указанную причину. Удаление ученика не удаляет ранее созданные события журнала; отмена взноса не удаляет его исходную запись. Используйте только вымышленные сведения."],
       ["Область действия и юрисдикция", "Это уведомление относится к облачной демонстрации «Ведомости», размещённой на Cloudflare. Язык страницы выбирает перевод, но не определяет применимое право. Демоверсия предназначена для проверки интерфейса и принимает только вымышленные записи."],
       ["Какие сведения обрабатываются", "Вы можете добавить имя, телефон, группу, месяц начала обучения, тариф и сведения об оплате. Эти записи передаются серверу приложения и хранятся в базе Cloudflare D1 в отдельной области демосеанса. Не вводите настоящие сведения об учениках, в том числе о детях, и не вводите банковские реквизиты, документы или платёжные токены. Приложение не переводит деньги."],
       ["Сеанс, срок хранения и доступ", "Для сеанса используется случайный идентификатор в cookie с флагами Secure, HttpOnly и SameSite. При каждом открытии демо срок сеанса продлевается на 90 дней. После 90 дней без посещений доступ прекращается; фоновое удаление завершается в течение следующего часа. Данные одного сеанса отделены от данных других посетителей. Поставщик инфраструктуры Cloudflare обрабатывает запросы и размещает приложение и базу D1; применяются также его условия и уведомления о конфиденциальности."],
@@ -21,6 +22,7 @@ window.VEDOMOST_LEGAL = {
   },
   uz: {
     privacy: [
+      ["Jurnal va bekor qilingan yozuvlar", "Amallarni tekshirish uchun vaqt, o‘quvchi maydonlari nusxalari hamda to‘lovni qo‘shish yoki bekor qilish tafsilotlari, shu jumladan kiritilgan sabab saqlanadi. O‘quvchini o‘chirish avvalgi jurnal hodisalarini yo‘q qilmaydi; to‘lovni bekor qilish uning asl yozuvini o‘chirmaydi. Faqat xayoliy ma’lumotlardan foydalaning."],
       ["Qo‘llanish doirasi va yurisdiksiya", "Ushbu bildirishnoma Cloudflare’da joylashtirilgan «Vedomost» bulutli demosiga tegishli. Sahifa tili tarjimani tanlaydi, qo‘llaniladigan qonunni emas. Demo interfeysni baholash uchun mo‘ljallangan va faqat xayoliy qaydlarni qabul qiladi."],
       ["Qayta ishlanadigan ma’lumotlar", "Ism, telefon, guruh, o‘qish boshlangan oy, tarif va to‘lov tafsilotlarini kiritishingiz mumkin. Qaydlar ilova serveriga yuboriladi va Cloudflare D1 bazasida alohida demo seansi uchun saqlanadi. Haqiqiy o‘quvchilar, jumladan bolalar haqidagi ma’lumotlarni, bank rekvizitlari, hujjatlar yoki to‘lov tokenlarini kiritmang. Ilova pul o‘tkazmaydi."],
       ["Seans, saqlash muddati va kirish", "Seans uchun Secure, HttpOnly va SameSite belgilariga ega tasodifiy identifikatorli cookie ishlatiladi. Demo har ochilganda seans muddati 90 kunga uzaytiriladi. 90 kun tashrif bo‘lmasa, kirish yopiladi va qaydlar keyingi bir soat ichida o‘chiriladi. Har bir seans ma’lumotlari boshqa tashrif buyuruvchilarnikidan ajratilgan. Cloudflare infratuzilma provayderi so‘rovlarni qayta ishlaydi hamda ilova va D1 bazasini joylashtiradi; uning shartlari va maxfiylik bildirishnomalari ham amal qiladi."],
@@ -39,6 +41,7 @@ window.VEDOMOST_LEGAL = {
   },
   en: {
     privacy: [
+      ["Activity and voided records", "To review operations, the application stores timestamps, snapshots of student fields and payment creation or cancellation details, including the reason provided. Deleting a student does not erase earlier activity events; voiding a payment does not erase its original record. Use fictional data only."],
       ["Scope and jurisdiction", "This notice covers the Vedomost cloud demo hosted on Cloudflare. The page language selects a translation; it does not determine applicable law. The demo is for interface evaluation and accepts fictional records only."],
       ["Information processed", "You can enter a name, phone number, group, enrollment month, fee and payment details. Entries are sent to the application server and stored in Cloudflare D1 in a separate area for the demo session. Do not enter real student information, including children’s information, or bank details, identity documents or payment tokens. The app does not transfer money."],
       ["Session, retention and access", "A random session identifier is carried in a cookie marked Secure, HttpOnly and SameSite. Each visit renews the session for 90 days. After 90 days without visits, access ends and background deletion completes within the following hour. Each session’s data is separated from other visitors’ data. Cloudflare processes requests and hosts the application and D1 database; its terms and privacy notices also apply."],

@@ -1,9 +1,10 @@
 """Small, local payment ledger. Money is stored as integer minor units."""
 
+import json
 import re
 import sqlite3
 from contextlib import asynccontextmanager
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, localcontext
 from pathlib import Path
 from typing import Annotated, Literal
@@ -66,6 +67,13 @@ class Payment(PaymentInput):
     exchange_rate: Decimal
     rate_date: date | None
     rate_source: str | None
+    voided_at: str | None = None
+    void_reason: str | None = None
+
+
+class VoidInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
 
 
 class Debtor(Student):
@@ -135,6 +143,8 @@ def payment_dict(row: sqlite3.Row) -> dict:
         "rate_date": row["rate_date"],
         "rate_source": row["rate_source"],
         "date": row["paid_on"],
+        "voided_at": row["voided_at"],
+        "void_reason": row["void_reason"],
     }
 
 
@@ -172,6 +182,30 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         if row is None:
             raise HTTPException(404, "Ученик не найден")
         return row
+
+    def record_activity(db, action, student, detail, payment_id=None):
+        db.execute(
+            "INSERT INTO activity(action,created_at,student_id,student_name,payment_id,detail) "
+            "VALUES(?,?,?,?,?,?)",
+            (
+                action,
+                datetime.now(timezone.utc).isoformat(),
+                student["id"],
+                student["name"],
+                payment_id,
+                json.dumps(detail, default=str, ensure_ascii=False),
+            ),
+        )
+
+    @api.get("/activity")
+    def activity(before: Annotated[int | None, Query(gt=0, le=MAX_ID)] = None):
+        with connect() as db:
+            rows = db.execute(
+                "SELECT * FROM activity WHERE (? IS NULL OR id < ?) ORDER BY id DESC LIMIT 51",
+                (before, before),
+            ).fetchall()
+            items = [{**dict(row), "detail": json.loads(row["detail"])} for row in rows[:50]]
+            return {"items": items, "next_before": items[-1]["id"] if len(rows) > 50 else None}
 
     @api.get("/", include_in_schema=False)
     def index():
@@ -237,7 +271,9 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                     student.start_month or date.today().strftime("%Y-%m"),
                 ),
             )
-            return student_dict(require_student(db, cursor.lastrowid))
+            result = student_dict(require_student(db, cursor.lastrowid))
+            record_activity(db, "student.add", result, {"after": result})
+            return result
 
     @api.get("/students/{student_id}", response_model=Student)
     def get_student(student_id: StudentId):
@@ -250,7 +286,9 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
             existing = require_student(db, student_id)
             start_month = student.start_month or existing["start_month"]
             earliest = db.execute(
-                "SELECT MIN(substr(paid_on,1,7)) FROM payments WHERE student_id=?", (student_id,)
+                "SELECT MIN(substr(paid_on,1,7)) FROM payments "
+                "WHERE student_id=? AND voided_at IS NULL",
+                (student_id,),
             ).fetchone()[0]
             if earliest and start_month > earliest:
                 raise HTTPException(409, "Начало обучения позже существующих оплат")
@@ -266,18 +304,29 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                     student_id,
                 ),
             )
-            return student_dict(require_student(db, student_id))
+            result = student_dict(require_student(db, student_id))
+            if result != student_dict(existing):
+                record_activity(
+                    db,
+                    "student.update",
+                    result,
+                    {"before": student_dict(existing), "after": result},
+                )
+            return result
 
     @api.delete("/students/{student_id}", status_code=204)
     def delete_student(student_id: StudentId):
         with connect(write=True) as db:
-            require_student(db, student_id)
+            existing = require_student(db, student_id)
             if db.execute(
                 "SELECT 1 FROM payments WHERE student_id = ? LIMIT 1", (student_id,)
             ).fetchone():
                 raise HTTPException(
                     409, "Нельзя удалить ученика с оплатами: история должна сохраниться"
                 )
+            record_activity(
+                db, "student.delete", student_dict(existing), {"before": student_dict(existing)}
+            )
             db.execute("DELETE FROM students WHERE id = ?", (student_id,))
         return Response(status_code=204)
 
@@ -358,7 +407,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                 row[0]
                 for row in db.execute(
                     "SELECT amount_cents FROM payments WHERE student_id = ? "
-                    "AND paid_on >= ? AND (? IS NULL OR paid_on < ?)",
+                    "AND voided_at IS NULL AND paid_on >= ? AND (? IS NULL OR paid_on < ?)",
                     (payment.student_id, month_start, month_end, month_end),
                 )
             )
@@ -384,7 +433,32 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                     (idempotency_key, payload, cursor.lastrowid),
                 )
             row = db.execute("SELECT * FROM payments WHERE id = ?", (cursor.lastrowid,)).fetchone()
-            return payment_dict(row)
+            result = payment_dict(row)
+            record_activity(
+                db, "payment.add", student_dict(existing), {"payment": result}, result["id"]
+            )
+            return result
+
+    @api.post("/payments/{payment_id}/void", response_model=Payment)
+    def void_payment(payment_id: StudentId, data: VoidInput):
+        with connect(write=True) as db:
+            row = db.execute("SELECT * FROM payments WHERE id=?", (payment_id,)).fetchone()
+            if row is None:
+                raise HTTPException(404, "Payment not found")
+            if row["voided_at"]:
+                if row["void_reason"] != data.reason:
+                    raise HTTPException(409, "Payment already voided")
+                return payment_dict(row)
+            db.execute(
+                "UPDATE payments SET voided_at=?, void_reason=? WHERE id=?",
+                (datetime.now(timezone.utc).isoformat(), data.reason, payment_id),
+            )
+            result = payment_dict(
+                db.execute("SELECT * FROM payments WHERE id=?", (payment_id,)).fetchone()
+            )
+            student = student_dict(require_student(db, row["student_id"]))
+            record_activity(db, "payment.void", student, {"payment": result}, payment_id)
+            return result
 
     @api.get("/students/{student_id}/payments", response_model=list[Payment])
     def payments(student_id: StudentId):
@@ -409,7 +483,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                 (student_id, start, end, end),
             ).fetchall()
             charged = student["monthly_fee_cents"] if student["start_month"] <= month else 0
-            paid = sum(row["amount_cents"] for row in payments)
+            paid = sum(row["amount_cents"] for row in payments if not row["voided_at"])
             return {
                 "month": month,
                 "student": student_dict(student),
@@ -428,7 +502,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
                 SELECT s.*, COALESCE(SUM(p.amount_cents), 0) AS paid_cents
                 FROM students s
                 LEFT JOIN payments p ON p.student_id = s.id
-                    AND p.paid_on >= ? AND (? IS NULL OR p.paid_on < ?)
+                    AND p.voided_at IS NULL AND p.paid_on >= ? AND (? IS NULL OR p.paid_on < ?)
                 WHERE s.start_month <= ?
                 GROUP BY s.id
                 HAVING COALESCE(SUM(p.amount_cents), 0) < s.monthly_fee_cents

@@ -219,7 +219,7 @@ footer a { text-underline-offset: 4px; }
 @container ledger (max-width: 520px) {
   .dashboard-page .table-head { display: none; }
   .dashboard-page .debtor-row { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px 12px; padding: 24px 0; }
-  .dashboard-page .debtor-person { grid-row: 1; grid-column: 1/3; padding-right: 72px; }
+  .dashboard-page .debtor-person { grid-row: 1; grid-column: 1/3; padding-right: 0; margin-right: 80px; min-width: 0; }
   .dashboard-page .pay-button { grid-row: 1; grid-column: 2; justify-self: end; width: 68px; font-size: 12px; }
   .dashboard-page .amount { grid-row: 2; text-align: left; font-size: 14px; }
   .dashboard-page .amount::before { content: attr(data-label); display: block; color: var(--muted); font-size: 11px; margin-bottom: 6px; }
@@ -234,3 +234,28 @@ footer a { text-underline-offset: 4px; }
   .dashboard-page .payment-panel input,
   .dashboard-page .payment-panel select { font-size: 16px; }
 }
+
+/* Operation details use the same surfaces and spacing as the student ledger. */
+#activity-view { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; }
+.activity-entry { border-top: 1px solid var(--line); padding: 20px 0; overflow-wrap: anywhere; }
+.activity-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; font-size: 14px; }
+.activity-head time, .activity-detail { font-size: 13px; color: var(--muted); }
+.activity-person { font-size: 15px; font-weight: 650; margin: 10px 0; }
+.activity-detail { margin: 6px 0; line-height: 1.6; }
+.history-row { flex-wrap: wrap; gap: 10px 20px; }
+.history-row > strong { overflow-wrap: anywhere; }
+.payment-actions { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 16px; }
+.payment-actions .text-button { font-size: 13px; }
+.void-reason { flex-basis: 100%; color: var(--muted); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.voided-payment > strong, .voided-payment .statement-line { text-decoration: line-through; color: var(--muted); }
+#void-description { overflow-wrap: anywhere; }
+#void-reason { display: block; width: 100%; min-width: 0; padding: 12px; margin-top: 8px; resize: vertical; background: var(--input); color: var(--text); border: 1px solid var(--control-border); }
+#confirm-void { width: 100%; font-size: 14px; }
+@media (max-width: 700px) {
+  .dashboard-page .tabs { flex-wrap: wrap; }
+  .dashboard-page .tabs button { min-width: 0; flex: 1 1 auto; }
+  #activity-view { padding: 20px; }
+  #void-reason { font-size: 16px; }
+}
+
+.activity-mode .period { display: none; }

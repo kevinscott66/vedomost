@@ -109,3 +109,11 @@ Removed the redundant payment-recording disclaimer and API documentation link fr
 ## Inline exchange-rate display
 
 The rate control is a quiet text disclosure below the balance caption. Foreign display currencies show the quote and effective date; UZS hides the rate control because no display conversion is needed. Stale/fallback warnings remain visible. Numeric dates avoid missing Uzbek month names in browser Intl data. Public browser checks covered Russian/Uzbek date rendering, USD conversion and the native disclosure. 29 JavaScript tests pass. Screenshot: [inline rate](inline-rate.png). No ledger data changed.
+
+## Cancellation / activity — 29 October 2026
+
+92 Python and42 Node tests pass. New adapter-parametrized tests cover void/retry/conflicting reason, immutable FX snapshots on void and replacement, debt/statement totals, concurrent voids (one event), visitor isolation/CSRF, failed-write preservation, audit pagination and schema3→4 migration without invented events. UI tests cover RUB overpayment followed by selecting another student and a stalled payment request that unlocks controls while retaining its retry key.
+
+Separate disposable SQLite DB on127.0.0.1:8786: browser recorded10000RUB overpayment, selectedTimur andAnna afterwards, voided with a reason, prepared and saved500000UZS replacement, and voided it again. Original history remained, debt restored, audit ordered. No user/public session changed.24 responsive combinations (320/390/720/1440 × RU/UZ/EN ×2themes) for activity/history/void dialog: no measured horizontal overflow. Later public/mobile hit-testing reproduced the reported button failure: the positioned .debtor-person spanned the pay button and intercepted taps. Replaced its right padding with an80px outside margin so its actual hit box ends before the button. The timeout separately prevents indefinite locking on stalled network requests. Evidence stays private in review/operations-ui-matrix.json.
+
+Mobile tap regression: after the hit-box fix,72 real pay-button clicks (3students ×4widths ×3languages ×2themes) selected the intended student. Before the fix, DOM hit-testing returned the debtor-person overlay and the form remained unchanged. Evidence: review/payment-button-taps.json.

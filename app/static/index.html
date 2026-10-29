@@ -13,6 +13,8 @@
     <script src="/static/currency.js" defer></script>
     <script src="/static/calendar.js" defer></script>
     <script src="/static/app.js" defer></script>
+    <script src="/static/payment-actions.js" defer></script>
+    <script src="/static/activity.js" defer></script>
   </head>
   <body class="dashboard-page">
     <aside class="sidebar">
@@ -34,6 +36,9 @@
           <img src="/static/icons/users.svg" alt="" /><span data-i18n="students"
             >Ученики</span
           ><span id="student-count">0</span>
+        </button>
+        <button id="activity-tab" aria-pressed="false">
+          <img src="/static/icons/book-open.svg" alt="" /><span data-i18n="activityTitle">Журнал</span>
         </button>
       </nav>
       <div class="sidebar-bottom">
@@ -105,7 +110,7 @@
             </button>
           </div>
         </div>
-        <p class="welcome-description" data-i18n="welcomeDescription">Ученики, платежи и остаток за месяц.</p>
+        <p id="page-description" class="welcome-description" data-i18n="welcomeDescription">Ученики, платежи и остаток за месяц.</p>
       </header>
       <div id="global-error" role="alert" hidden></div>
       <section id="debts-view">
@@ -191,6 +196,13 @@
           >
         </div>
         <div id="students-list"></div>
+      </section>
+      <section id="activity-view" hidden>
+        <div class="section-head"><h2 data-i18n="operationsTitle">Операции</h2>
+          <button id="activity-refresh" type="button" class="text-button" data-i18n="refreshActivity">Обновить</button></div>
+        <p class="muted" data-i18n="activityNote"></p>
+        <div id="activity-list" aria-live="polite"></div>
+        <button id="activity-more" class="outline" type="button" hidden data-i18n="activityMore">Ещё операции</button>
       </section>
       <footer>
         <span data-i18n="copyright"></span>
@@ -290,6 +302,18 @@
         </button>
       </div>
       <div id="history-list"></div>
+    </dialog>
+    <dialog id="void-dialog" aria-labelledby="void-title">
+      <form id="void-form">
+        <div class="dialog-head"><h2 id="void-title"></h2>
+          <button type="button" class="icon" id="close-void" data-i18n-aria="close" aria-label="Закрыть">×</button></div>
+        <p id="void-description"></p>
+        <p class="muted" id="void-note"></p>
+        <label><span data-i18n="voidReason">Причина отмены</span>
+          <textarea id="void-reason" maxlength="300" rows="3" required></textarea></label>
+        <p id="void-message" class="form-message" role="status"></p>
+        <button id="confirm-void" class="danger" type="submit"></button>
+      </form>
     </dialog>
     <dialog id="delete-dialog" aria-labelledby="delete-title">
       <h2 id="delete-title"><span data-i18n="deleteStudent">Удалить ученика?</span></h2>

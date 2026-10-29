@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import copy
 import re
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation, localcontext
 from typing import Literal
 
@@ -18,6 +18,7 @@ MAX_ID = 2**63 - 1
 MAX_STUDENTS = 100
 MAX_PAYMENTS = 1000
 MAX_REQUESTS = 1000
+MAX_EVENTS = 3000
 
 
 class DomainError(Exception):
@@ -53,6 +54,33 @@ class PaymentInput(BaseModel):
     amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     date: date
     currency: Literal["UZS", "RUB", "USD"] = "UZS"
+
+
+class VoidInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=300)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def trim_reason(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+def _record(state, action, student, detail, payment_id=None):
+    events = state.setdefault("activity", [])
+    if len(events) >= MAX_EVENTS:
+        raise DomainError(422, "Activity limit reached")
+    events.append(
+        {
+            "id": len(events) + 1,
+            "action": action,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "student_id": student["id"],
+            "student_name": student["name"],
+            "payment_id": payment_id,
+            "detail": copy.deepcopy(detail),
+        }
+    )
 
 
 def _validated(model, data):
@@ -211,6 +239,45 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
     query, body = query or {}, body or {}
     method, path = method.upper(), path.rstrip("/") or "/"
     try:
+        if method == "GET" and path == "/activity":
+            before = query.get("before")
+            if before is not None:
+                try:
+                    before = int(before)
+                except (TypeError, ValueError):
+                    raise DomainError(422, "Invalid activity cursor") from None
+                if not 0 < before <= MAX_ID:
+                    raise DomainError(422, "Invalid activity cursor")
+            rows = [
+                e
+                for e in reversed(working.get("activity", []))
+                if before is None or e["id"] < before
+            ]
+            return _result(
+                200,
+                {"items": rows[:50], "next_before": rows[49]["id"] if len(rows) > 50 else None},
+                False,
+                working,
+                state,
+            )
+        m_void = re.fullmatch(r"/payments/([0-9]+)/void", path)
+        if method == "POST" and m_void:
+            pid = int(m_void.group(1))
+            if not 0 < pid <= MAX_ID:
+                raise DomainError(422, "Invalid payment id")
+            data = _validated(VoidInput, body)
+            p = next((p for p in working["payments"] if p["id"] == pid), None)
+            if p is None:
+                raise DomainError(404, "Payment not found")
+            if p.get("voided_at"):
+                if p["void_reason"] != data.reason:
+                    raise DomainError(409, "Payment already voided")
+                return _result(200, _public_payment(p), False, working, state)
+            p.update(voided_at=datetime.now(timezone.utc).isoformat(), void_reason=data.reason)
+            _record(
+                working, "payment.void", _student(working, p["student_id"]), {"payment": p}, pid
+            )
+            return _result(200, _public_payment(p), True, working, state)
         if method == "GET" and path == "/students":
             rows = sorted(working["students"], key=lambda s: (s["name"].casefold(), s["id"]))
             return _result(200, rows, False, working, state)
@@ -227,6 +294,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                     _cents(p["base_amount"])
                     for p in working["payments"]
                     if p["student_id"] == s["id"]
+                    and not p.get("voided_at")
                     and start <= p["date"]
                     and (end is None or p["date"] < end)
                 )
@@ -265,6 +333,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
             }
             working["students"].append(s)
             working["next_student"] += 1
+            _record(working, "student.add", s, {"after": s})
             return _result(201, s, True, working, state)
 
         m = re.fullmatch(r"/students/([^/]+)(?:/(payments|statement))?", path)
@@ -286,7 +355,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                 ]
                 rows.sort(key=lambda p: (p["date"], p["id"]))
                 charge = _cents(s["monthly_fee"]) if s["start_month"] <= month else 0
-                paid = sum(_cents(p["base_amount"]) for p in rows)
+                paid = sum(_cents(p["base_amount"]) for p in rows if not p.get("voided_at"))
                 return _result(
                     200,
                     {
@@ -311,11 +380,16 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                 item = _validated(StudentInput, body)
                 start_month = item.start_month or s["start_month"]
                 earliest = min(
-                    (p["date"][:7] for p in working["payments"] if p["student_id"] == sid),
+                    (
+                        p["date"][:7]
+                        for p in working["payments"]
+                        if p["student_id"] == sid and not p.get("voided_at")
+                    ),
                     default=None,
                 )
                 if earliest and start_month > earliest:
                     raise DomainError(409, "Начало обучения позже существующих оплат")
+                before = copy.deepcopy(s)
                 s.update(
                     name=item.name,
                     phone=item.phone,
@@ -323,12 +397,15 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                     monthly_fee=f"{item.monthly_fee:.2f}",
                     start_month=start_month,
                 )
+                if s != before:
+                    _record(working, "student.update", s, {"before": before, "after": s})
                 return _result(200, _public_student(s), True, working, state)
             if not m.group(2) and method == "DELETE":
                 if any(p["student_id"] == sid for p in working["payments"]):
                     raise DomainError(
                         409, "Нельзя удалить ученика с оплатами: история должна сохраниться"
                     )
+                _record(working, "student.delete", s, {"before": s})
                 working["students"].remove(s)
                 return _result(204, None, True, working, state)
 
@@ -388,6 +465,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
                 _cents(p["base_amount"])
                 for p in working["payments"]
                 if p["student_id"] == item.student_id
+                and not p.get("voided_at")
                 and start <= p["date"]
                 and (end is None or p["date"] < end)
             )
@@ -411,6 +489,7 @@ def handle(state, method, path, query=None, body=None, idempotency_key=None, quo
             }
             working["payments"].append(payment)
             working["next_payment"] += 1
+            _record(working, "payment.add", s, {"payment": payment}, pid)
             if idempotency_key:
                 working["requests"][idempotency_key] = {"payload": normalized, "payment_id": pid}
             return _result(201, payment, True, working, state)

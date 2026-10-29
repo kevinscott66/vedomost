@@ -39,7 +39,7 @@ class Database:
     def initialize(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
-            if db.execute("PRAGMA user_version").fetchone()[0] > 3:
+            if db.execute("PRAGMA user_version").fetchone()[0] > 4:
                 raise RuntimeError("Database schema is newer than this application")
             db.execute("PRAGMA journal_mode = WAL")
             db.executescript("""
@@ -102,4 +102,13 @@ class Database:
                 db.execute("ALTER TABLE payments ADD COLUMN rate_date TEXT")
             if "rate_source" not in payment_columns:
                 db.execute("ALTER TABLE payments ADD COLUMN rate_source TEXT")
-            db.execute("PRAGMA user_version = 3")
+            for column in ("voided_at", "void_reason"):
+                if column not in payment_columns:
+                    db.execute(f"ALTER TABLE payments ADD COLUMN {column} TEXT")
+            db.execute("""CREATE TABLE IF NOT EXISTS activity (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action TEXT NOT NULL, created_at TEXT NOT NULL,
+                student_id INTEGER NOT NULL, student_name TEXT NOT NULL,
+                payment_id INTEGER, detail TEXT NOT NULL
+            )""")
+            db.execute("PRAGMA user_version = 4")

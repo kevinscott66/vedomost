@@ -154,3 +154,11 @@ test("without Web Locks bootstrap requires an existing session", async () => {
   await window.fetch("/students");
   assert.equal(headers["X-Demo-Require-Session"], "1");
 });
+
+test("activity and cancellation stay within the visitor's demo session", async () => {
+  const calls = [];
+  const window = setup((input) => { calls.push(input); return Promise.resolve(response()); });
+  await window.fetch("/activity?before=51");
+  await window.fetch("/payments/3/void", {method: "POST", body: JSON.stringify({reason: "Wrong currency"})});
+  assert.deepEqual(calls, ["/demos/vedomost/session", "/demos/vedomost/activity?before=51", "/demos/vedomost/payments/3/void"]);
+});
