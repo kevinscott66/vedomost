@@ -529,3 +529,41 @@ test("deadline unlocks even if a session wrapper ignores the abort signal", asyn
   assert.equal(app.payButtons()[0].disabled, false);
   assert.match(app.element("payment-message").textContent, /requestTimeout/);
 });
+
+test("correction keeps the modal blocking other drafts until preparation completes", async () => {
+  const app = await runtime();
+  vm.runInContext(fs.readFileSync("app/static/payment-actions.js", "utf8"), app.context);
+  const row = new Element();
+  const original = {id: 9, amount: "12.50", currency: "USD", date: "2026-10-20"};
+  app.context.window.paymentActions.append(row, original, people[0]);
+  await row.children[0].children[0].fire("click");
+  app.element("void-reason").value = "Wrong amount";
+  const correction = app.element("void-form").fire("submit");
+  await app.respond(app.requests.at(-1), {...original, voided_at: "2026-10-29"});
+  assert.equal(app.element("void-dialog").open, true, "modal still makes background form inert");
+  assert.equal(app.element("close-void").disabled, true);
+  await app.element("close-void").fire("click", {evenIfDisabled: true});
+  assert.equal(app.element("void-dialog").open, true);
+  for (const req of app.requests.slice(-2))
+    await app.respond(req, req.path === "/students" ? people : report("2026-10"));
+  await correction;
+  assert.equal(app.element("void-dialog").open, false);
+  assert.equal(app.element("pay-amount").value, "12.50");
+  assert.equal(app.element("pay-currency").value, "USD");
+  assert.equal(app.element("save-payment").disabled, false);
+  // Once the blocking operation has completed, a different draft keeps its retry key.
+  app.element("pay-student").value = "2";
+  app.element("pay-amount").value = "200";
+  app.element("pay-currency").value = "UZS";
+  const posting = app.element("payment-form").fire("submit");
+  const posted = app.requests.at(-1);
+  const key = posted.options.headers["Idempotency-Key"];
+  await app.respond(posted, {detail: "failure"}, 503);
+  await posting;
+  assert.equal(app.element("pay-student").value, "2");
+  assert.equal(app.element("pay-amount").value, "200");
+  const retry = app.element("payment-form").fire("submit");
+  assert.equal(app.requests.at(-1).options.headers["Idempotency-Key"], key);
+  await app.respond(app.requests.at(-1), {detail: "failure"}, 503);
+  await retry;
+});

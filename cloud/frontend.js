@@ -4,22 +4,44 @@
   const nativeFetch = window.fetch.bind(window);
   const sessionUrl = `${base}/session`;
 
-  function startSession() {
+  async function startSession() {
     const locks = window.navigator?.locks;
-    const request = () => nativeFetch(sessionUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Without cross-tab locking, only renew an existing cookie; never race to create one.
-        ...(!locks?.request ? { "X-Demo-Require-Session": "1" } : {}),
-      },
-      body: "{}",
-      credentials: "same-origin",
+    const controller = new AbortController();
+    let timer;
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error("Demo session startup timed out."));
+      }, 15000);
     });
-    // Cookie installation completes before fetch resolves and releases this origin-wide lock.
-    return locks?.request
-      ? locks.request("vedomost-session-bootstrap", request)
-      : request();
+    const request = async () => {
+      const response = await Promise.race([nativeFetch(sessionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Without cross-tab locking, only renew an existing cookie; never race to create one.
+          ...(!locks?.request ? { "X-Demo-Require-Session": "1" } : {}),
+        },
+        body: "{}",
+        credentials: "same-origin",
+        signal: controller.signal,
+      }), deadline]);
+      if (!response.ok) {
+        const error = new Error("The demo session could not be started.");
+        error.unsupportedBrowser = response.status === 409;
+        throw error;
+      }
+      return await Promise.race([response.json(), deadline]);
+    };
+    try {
+      // Bound both the wait for another tab and the fetch/body inside the lock.
+      return await Promise.race([
+        locks?.request
+          ? locks.request("vedomost-session-bootstrap", { signal: controller.signal }, request)
+          : request(),
+        deadline,
+      ]);
+    } finally { clearTimeout(timer); }
   }
 
   // Share each in-flight session request; clear failures so a later app retry can try again.
@@ -29,14 +51,6 @@
       let tracked;
       tracked = Promise.resolve()
         .then(startSession)
-        .then((response) => {
-          if (!response.ok) {
-            const error = new Error("The demo session could not be started.");
-            error.unsupportedBrowser = response.status === 409;
-            throw error;
-          }
-          return response.json();
-        })
         .catch((error) => {
           if (sessionReady === tracked) sessionReady = null;
           throw error;

@@ -15,7 +15,7 @@ function response(ok = true) {
   return { ok, json: async () => ({}) };
 }
 
-function setup(nativeFetch, navigator = { locks: { request: (_name, callback) => callback() } }) {
+function setup(nativeFetch, navigator = { locks: { request: (_name, _options, callback) => callback() } }, timers = { setTimeout, clearTimeout }) {
   const listeners = {};
   const main = { prepend: () => {} };
   const document = {
@@ -35,6 +35,9 @@ function setup(nativeFetch, navigator = { locks: { request: (_name, callback) =>
   };
   vm.runInNewContext(source, {
     window,
+    AbortController,
+    setTimeout: timers.setTimeout,
+    clearTimeout: timers.clearTimeout,
     document,
     URL,
     Promise,
@@ -115,7 +118,7 @@ test("cloud statement requests retain their month and use the demo session path"
 
 test("first bootstrap in two tabs is serialized until cookie installation", async () => {
   let tail = Promise.resolve();
-  const navigator = { locks: { request: (_name, callback) => {
+  const navigator = { locks: { request: (_name, _options, callback) => {
     const current = tail.then(callback);
     tail = current.catch(() => {});
     return current;
@@ -162,3 +165,47 @@ test("activity and cancellation stay within the visitor's demo session", async (
   await window.fetch("/payments/3/void", {method: "POST", body: JSON.stringify({reason: "Wrong currency"})});
   assert.deepEqual(calls, ["/demos/vedomost/session", "/demos/vedomost/activity?before=51", "/demos/vedomost/payments/3/void"]);
 });
+
+for (const stalled of ["fetch", "body", "lock"]) {
+  test(`session startup deadline recovers from a stalled ${stalled} and shares retries`, async () => {
+    const pendingTimers = new Set();
+    const timers = {
+      setTimeout: callback => { pendingTimers.add(callback); return callback; },
+      clearTimeout: callback => pendingTimers.delete(callback),
+    };
+    const calls = [];
+    let attempts = 0, lockAttempts = 0, oldSignal;
+    const navigator = { locks: { request: (_name, {signal}, callback) => {
+      lockAttempts++;
+      if (stalled === "lock" && lockAttempts === 1) {
+        oldSignal = signal;
+        return new Promise((_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted lock"))));
+      }
+      return callback();
+    } } };
+    const window = setup((url, init) => {
+      calls.push(url);
+      if (url.endsWith("/session")) {
+        attempts++;
+        if (attempts === 1 && stalled !== "lock") {
+          oldSignal = init.signal;
+          if (stalled === "fetch") return new Promise(() => {});
+          return Promise.resolve({ok: true, json: () => new Promise(() => {})});
+        }
+      }
+      return Promise.resolve(response());
+    }, navigator, timers);
+    const first = window.fetch("/students");
+    // Attach rejection before advancing the deadline.
+    const failure = assert.rejects(first, /timed out|aborted lock/);
+    await new Promise(resolve => setImmediate(resolve));
+    for (const expire of [...pendingTimers]) expire();
+    await failure;
+    assert.equal(oldSignal.aborted, true);
+    await Promise.all([window.fetch("/students"), window.fetch("/activity")]);
+    assert.equal(lockAttempts, 2);
+    assert.equal(attempts, stalled === "lock" ? 1 : 2);
+    assert.equal(pendingTimers.size, 0);
+    assert.deepEqual(calls.slice(-2), ["/demos/vedomost/students", "/demos/vedomost/activity"]);
+  });
+}

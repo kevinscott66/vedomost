@@ -98,3 +98,7 @@ FastAPI обслуживает JSON API и статические HTML/CSS/JS с
 Расчёт долга, оплаченного и лимита месячных оплат исключает отменённые записи; история/расчёт показывают их с пометкой. GET /activity отдаёт50 событий по убыванию ID, с курсором next_before. События содержат снимки до/после и не меняются при переименовании или удалении ученика. В Worker это необязательный массив activity внутри изолированной JSON-ведомости; существующие сеансы совместимы без D1-миграции. Максимум3000событий и общий лимит1МБ: при исчерпании запись отклоняется целиком.
 
 UI «Исправить» выполняет отмену и заполняет отдельный новый черновик. Новый взнос не отправляется автоматически и не связан серверной транзакцией с отменой; его курс фиксируется заново. Общий клиентский запрос ограничен20секундами, после чего форма разблокируется и просит проверить историю: тайм-аут не доказывает, что запись не состоялась. При повторе платежа сохраняется Idempotency-Key.
+
+### Pending correction and session startup
+
+Payment correction keeps its modal active until refreshing the ledger and preparing the separate replacement draft finish. This prevents a late continuation from replacing a newly entered payment or its idempotency key. Hosted session initialization uses a15-second deadline, an AbortController for the fetch and Web Lock queue, and a shared promise that is cleared on failure. Retries remain serialized across tabs; response parsing is included in the initialization deadline.

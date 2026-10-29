@@ -33,10 +33,11 @@
     message("void-message", t("saving"));
     try {
       await request(`/payments/${payment.id}/void`, { method: "POST", body: JSON.stringify({ reason }) });
+      // This is a separate payment draft. Nothing is silently posted at a new FX rate.
+      // Keep the modal blocking the payment form until its draft is ready.
+      await refresh();
       $("void-dialog").close();
       $("history-dialog").close();
-      // This is a separate payment draft. Nothing is silently posted at a new FX rate.
-      await refresh();
       if (prepare) {
         activateView("debts-tab");
         clearValidation($("payment-form"));
